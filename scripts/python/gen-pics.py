@@ -48,7 +48,7 @@ for i, img_ref in enumerate(back_colr_imgs):
             70 - floor(height/2)
         )
 
-# Function that returns an iterable for all combinations of the input iterable 
+# Return an iterable over all combinations of the input iterable
 def all_subsets(ss):
     return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
 
