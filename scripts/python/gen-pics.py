@@ -48,9 +48,11 @@ for i, img_ref in enumerate(back_colr_imgs):
             70 - floor(height/2)
         )
 
+# Function that returns an iterable for all combinations of the input iterable 
 def all_subsets(ss):
     return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
 
+# Save a new image for all combinations of colors and numbers.
 for color_subset in all_subsets(back_colr_imgs):
     for num_img in back_num_imgs:
         back_blank = back_blank_img.copy()
@@ -60,4 +62,4 @@ for color_subset in all_subsets(back_colr_imgs):
             color_string += color_img['name']
             back_blank.paste(color_img["img"], color_img["pos"], mask = color_img["img"])
 
-        back_blank.save(f"{prefix_img_str}generated/{num_img['name']}{color_string}.png")
+        back_blank.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}.png")
