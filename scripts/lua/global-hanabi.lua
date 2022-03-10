@@ -134,7 +134,7 @@ function spawnCard(front_url, back_url, state, pos, callback)
                 back = back_url
             })
             
-            new_card = custom_card.reload()
+            local new_card = custom_card.reload()
             new_card.memo = JSON.encode(state)
             --Wait.frames(function() 
                 callback(new_card) 
