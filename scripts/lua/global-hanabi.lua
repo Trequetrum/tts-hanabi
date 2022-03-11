@@ -18,7 +18,8 @@ color_order = {'b', 'g', 'r', 'w', 'y'}
 -- back of a card. While players can infer that anything more than one
 -- color is a rainbow, 'all five colors' is semantically equivalent to 
 -- rainbow (I'm not sure yet if that complicates the implementation of
--- the basic rule-set, but I don't think it will...).
+-- the basic rule-set, but I don't think it will as the masks can be
+-- treated as values to check equality directly).
 -- Use `band` to mask and `bor` to combine.
 --
 -- The keys in this table hard-code how each color is represented as a
@@ -191,7 +192,6 @@ function onLoad()
     log("Hello World!")
 
     generateDeckFromInfo(generateDeckInfo())
-
 end
 
 --[[ The onUpdate event is called once per frame. --]]
