@@ -54,12 +54,18 @@ def all_subsets(ss):
 
 # Save a new image for all combinations of colors and numbers.
 for color_subset in all_subsets(back_colr_imgs):
-    for num_img in back_num_imgs:
-        back_blank = back_blank_img.copy()
-        back_blank.paste(num_img["img"], num_img["pos"], mask = num_img["img"])
-        color_string = ""
-        for color_img in color_subset:
-            color_string += color_img['name']
-            back_blank.paste(color_img["img"], color_img["pos"], mask = color_img["img"])
 
+    color_string = ""
+
+    back_blank = back_blank_img.copy()
+
+    for color_img in color_subset:
+        color_string += color_img['name']
+        back_blank.paste(color_img["img"], color_img["pos"], mask = color_img["img"])
+    
+    back_blank.save(f"{prefix_img_str}generated/back_{color_string}.png")
+
+    for num_img in back_num_imgs:
+        back_blank_colored = back_blank.copy()
+        back_blank.paste(num_img["img"], num_img["pos"], mask = num_img["img"])
         back_blank.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}.png")
