@@ -1,0 +1,29 @@
+<Panel id="RedPanel" active="false">
+  <ExampleElement id="RedPanel1" exampleAttribute="5"/>
+</Panel>
+<Panel id="BluePanel" active="false">
+  <ExampleElement id="BluePanel1" exampleAttribute="5"/>
+</Panel>
+<!-- etc. 
+
+function onPlayerChangeColor(player_color)
+  for _,c in ipairs({"Red","Orange","Yellow","Green","Blue"}) do -- a table of the colors in your game
+    if Player[c].seated then
+      Global.UI.setAttribute(c.."Panel", "active", "true")
+    else
+      Global.UI.setAttribute(c.."Panel", "active", "false")
+    end
+  end
+end
+
+and to set an attribute:
+
+function setXmlValue(idSuffix, attribute, value)
+  for _,c in ipairs({"Red","Orange","Yellow","Green","Blue"}) do -- a table of the colors in your game
+    Global.UI.setAttribute(c..idSuffix, attribute, value)
+  end
+end
+setXmlValue("Panel1", "exampleAttribute", 7)
+
+
+-->

@@ -17,7 +17,8 @@ color_order = {'b', 'g', 'r', 'w', 'y'}
 -- Bit mask for the card colors. Used to describe the 'notes' on the
 -- back of a card. While players can infer that anything more than one
 -- color is a rainbow, 'all five colors' is semantically equivalent to 
--- rainbow.
+-- rainbow (I'm not sure yet if that complicates the implementation of
+-- the basic rule-set, but I don't think it will...).
 -- Use `band` to mask and `bor` to combine.
 --
 -- The keys in this table hard-code how each color is represented as a
@@ -50,7 +51,8 @@ color_layout = {
     ['5']=1
 }
 
--- Get the url for a corresponding number and color_mask.
+-- Get the url for a corresponding number and color_mask. When loaded,
+-- this shows automated player 'notes' on the back of their cards
 function generated_back_url(num, color_mask)
     if num == 0 and color_mask == 0 then
         return asset_url .. "back_blank.png"
@@ -124,6 +126,16 @@ function generateDeck_rec(card_info, index, max, accumulated, callback)
     end
 end
 
+
+-- API warpper for generateDeck_rec
+function generateDeckFromInfo(info, callback)
+    local max = #info
+    generateDeck_rec(info, 1, max, {}, callback)
+end
+
+-- Wrapper around spawnObject that sets the custom images and state
+-- for a card. State is not longer in a card's lua, but can be found
+-- JSON encoded on its `.memo` attribute. 
 function spawnCard(front_url, back_url, state, pos, callback)
     spawnObject({
         type = "CardCustom",
@@ -144,12 +156,7 @@ function spawnCard(front_url, back_url, state, pos, callback)
     })
 end
 
--- Call into
-function generateDeckFromInfo(info, callback)
-    local max = #info
-    generateDeck_rec(info, 1, max, {}, callback)
-end
-
+-- Return a table of starting card URLs and states
 function generateDeckInfo()
 
     local deck_info = {}
@@ -183,10 +190,7 @@ end
 function onLoad()
     log("Hello World!")
 
-    local deck_info = generateDeckInfo()
-    generateDeckFromInfo(
-        deck_info
-    )
+    generateDeckFromInfo(generateDeckInfo())
 
 end
 
