@@ -19,8 +19,7 @@ color_order = {'b', 'g', 'r', 'w', 'y'}
 -- color is a rainbow, 'all five colors' is semantically equivalent to 
 -- rainbow (I'm not sure yet if that complicates the implementation of
 -- the basic rule-set, but I don't think it will as the masks can be
--- treated as values to check equality directly).
--- Use `band` to mask and `bor` to combine.
+-- compared directly)
 --
 -- The keys in this table hard-code how each color is represented as a
 -- string on their respective filenames
@@ -32,12 +31,12 @@ color_order = {'b', 'g', 'r', 'w', 'y'}
 -- w: white
 -- y: yellow
 colors_mask = {
-    ['a'] = tonumber('11111', 2),
-    ['b'] = tonumber('1', 2),
-    ['g'] = tonumber('10', 2),
-    ['r'] = tonumber('100', 2),
-    ['w'] = tonumber('1000', 2),
-    ['y'] = tonumber('10000', 2)
+    ['a'] = tonumber('11111', 2), -- 31
+    ['b'] = tonumber('1', 2), -- 1
+    ['g'] = tonumber('10', 2), -- 2
+    ['r'] = tonumber('100', 2), -- 4
+    ['w'] = tonumber('1000', 2), -- 8
+    ['y'] = tonumber('10000', 2) -- 16
 }
 
 -- Hard-coding how each number is represented as a string on their 
@@ -72,6 +71,74 @@ function generated_back_url(num, color_mask)
     end
 
     return asset_gened_url .. "back_" .. num_str .. colors_str .. "png"
+end
+
+-- Utility to return the size of a table.
+function tableSize(table)
+    local count = 0
+
+    for _,_ in pairs(table) do
+        count = count + 1
+    end
+
+    return count
+end
+
+-- Utility that will invoke functions with a single callback parameter
+-- It calls them all in parallel and stores the results of each
+-- callback in a shape-preserving table.
+-- 
+-- This isn't protective against errors (neither is TTS, tbf), so if
+-- any of the given calls don't return, this will silently fail. (At
+-- least for now)
+function parallelCallback(callTable, callback)
+
+    local totalCount = tableSize(callTable)
+    local resultCount = 0
+    local results = {}
+
+    for key,call in pairs(callTable) do
+        call(function(v)
+            resultCount = resultCount + 1
+            results[key] = v
+            if resultCount == totalCount then
+                callback(results)
+            end
+        end)
+    end
+end
+
+-- Utility function, the same as parallel callback, but done in series
+-- instead. There are no guarentees on order, it's just useful to
+-- to batch calls to prevent TTS from trying to do too much in a 
+-- single frame.
+function seriesCallback(callTable, callback)
+        
+    local totalCount = 0
+    local resultOrder = {}
+    
+    for key,_ in pairs(callTable) do
+        totalCount = totalCount + 1
+        resultOrder[totalCount] = key
+    end
+
+    local function helper(resultIndex, accumulated)
+        if(resultIndex > totalCount) then
+            if(callback ~= nil) then
+                callback(accumulated)
+            end
+        else
+            callTable[resultOrder[resultIndex]](function(v)
+
+                accumulated[resultOrder[resultIndex]] = v
+                helper(resultIndex + 1, accumuated)
+                
+            end)
+        end
+    end
+
+    helper(1,{})
+
 end
 
 -- This recursively spawns each new card as a continuation of 
