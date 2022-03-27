@@ -1,0 +1,79 @@
+<Defaults>
+  <Text color="#ffffff"/>
+</Defaults>
+
+<Panel
+    id="PackerChipUIPanel"
+    position="0 0 -11"
+    height="250"
+    width="250">
+    <Text
+        offsetXY="0 125"
+        color="rgb(0,0,0)"
+        fontStyle="BoldItalic"
+        fontSize="20">
+            Gloomy Packer
+    </Text>
+    <Text
+        rotation="-90 0 0"
+        position="0 110 -11"
+        color="rgb(255,255,0)"
+        fontStyle="Bold"
+        fontSize="20">
+            Gloomy Packer
+    </Text>
+    <VerticalLayout
+        height="100"
+        offsetXY="0 25">
+        <Text
+            fontStyle="Bold">
+            Currently saved summary:
+        </Text>
+        <Text
+            id="saved_char_1"
+            alignment="MiddleLeft"
+            horizontalOverflow="Overflow">
+            1: No Character
+        </Text>
+        <Text
+            id="saved_char_2"
+            alignment="MiddleLeft"
+            horizontalOverflow="Overflow">
+            2: No Character
+        </Text>
+        <Text
+            id="saved_char_3"
+            alignment="MiddleLeft"
+            horizontalOverflow="Overflow">
+            3: No Character
+        </Text>
+        <Text
+            id="saved_char_4"
+            alignment="MiddleLeft"
+            horizontalOverflow="Overflow">
+            4: No Character
+        </Text>
+    </VerticalLayout>
+    <ProgressBar
+        id="prog_save"
+        width="250"
+        offsetXY="0 -80"
+        fillImageColor="rgb(255,255,0)"
+        percentage="0"
+        percentageTextFormat="0">
+    </ProgressBar>
+    <HorizontalLayout
+        rectAlignment="LowerCenter"
+        height="25">
+        <Button onClick="uiClickSave">Save</Button>
+        <Button onClick="uiClickLoad">Load</Button>
+    </HorizontalLayout>
+</Panel>
+
+<!-- Useful for seeing the corners of a panel.
+<Text alignment="MiddleCenter">X</Text>
+<Text alignment="UpperLeft">↖</Text>
+<Text alignment="UpperRight">↗︎︎</Text>
+<Text alignment="LowerLeft">↙</Text>
+<Text alignment="LowerRight">↘︎︎</Text>
+-->

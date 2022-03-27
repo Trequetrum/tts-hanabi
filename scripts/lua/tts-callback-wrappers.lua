@@ -1,0 +1,139 @@
+
+function flipObject(tts_object)
+    return function(callback)
+        local face_down = tts_object.is_face_down
+        tts_object.flip()
+        if callback ~= nil then
+              
+            Wait.condition(
+                function() callback(tts_object, true) end, 
+                function() return tts_object.is_face_down ~= face_down end, 
+                5, 
+                function() callback(tts_object, false) end
+            )
+        end
+    end
+end
+
+function flipObjectPrime(tts_object, up)
+    return function(callback)
+        local face_down = tts_object.is_face_down
+        if face_down ~= up then
+            resolveCallback(callback, tts_object, true)
+        else
+            flipObject(tts_object)(callback)
+        end
+    end
+end
+
+function flipFaceDown(tts_object)
+    return flipObjectPrime(tts_object, false)
+end
+
+function flipFaceUp(tts_object)
+    return flipObjectPrime(tts_object, true)
+end
+
+
+-- Wrapper around spawnObject that sets the custom images and state
+-- for a card. State is not longer in a card's lua, but can be found
+-- JSON encoded on its `.memo` attribute. 
+function spawnCard(front_url, back_url, state, pos) 
+    return function(callback)
+        spawnObject({
+            type = "CardCustom",
+            position = pos,
+            callback_function = function(custom_card)
+                custom_card.setCustomObject({
+                    face = front_url,
+                    back = back_url
+                })
+                
+                local new_card = custom_card.reload()
+                new_card.memo = JSON.encode(state)
+                callback(new_card)
+            end
+        })
+    end
+end
+
+function spawnFromContainer(guid)
+    return function (bag)
+        return function(callback)
+
+            if bag.isDestroyed() then return end
+
+            local remain = bag.remainder
+            if remain ~= nil then
+                callback(remain)
+            else
+                local bag_pos = bag.getPosition()
+                bag.takeObject({
+                    guid = guid,
+                    position = {bag_pos.x + 2, bag_pos.y + 1, bag_pos.z + 2},
+                    smooth = false,
+                    callback_function = callback
+                })
+            end
+        end
+    end
+end
+
+-- Callback_Thunk for a smooth move that completes when the object stops
+-- or if 5 seconds have passed. The second parameter of the callback is
+-- a boolean that indicates whether the move was successful
+function smoothMove(world_position)
+    return function(tts_object)
+        return function(callback)
+            tts_object.setPositionSmooth(world_position, false, false)
+            if callback ~= nil then
+              
+                Wait.condition(
+                    function() callback(tts_object, true) end,
+                    function() return not tts_object.isSmoothMoving() end,
+                    5,
+                    function() callback(tts_object, false) end
+                )
+            end
+        end
+    end
+end
+
+-- Callback_Thunk for a smooth move that completes when the object stops
+-- or if 5 seconds have passed. The second parameter of the callback is
+-- a boolean that indicates whether the move was successful
+function smoothRelativeMove(relative_position)
+    return function(tts_object)
+
+        local pos = Vector(relative_position)
+        local current_pos = tts_object.getPosition()
+        local new_pos = {
+            current_pos.x + pos.x,
+            current_pos.y + pos.y,
+            current_pos.z + pos.z
+        }
+        return smoothMove(new_pos)(tts_object)
+        
+    end
+end
+
+function waitFrames(n)
+    local num = 1
+    if n > 1 then
+        num = n
+    end
+    return function(callback)
+        Wait.frames(callback, n)
+    end
+end
+
+function waitUntilResting(tts_object)
+    return function(callback)
+        Wait.condition(
+            function() callback(tts_object, true) end,
+            function() return tts_object.resting end,
+            5,
+            function() callback(tts_object, false) end
+        )
+    end
+end
