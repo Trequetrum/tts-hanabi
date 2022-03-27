@@ -67,5 +67,5 @@ for color_subset in all_subsets(back_colr_imgs):
 
     for num_img in back_num_imgs:
         back_blank_colored = back_blank.copy()
-        back_blank.paste(num_img["img"], num_img["pos"], mask = num_img["img"])
-        back_blank.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}.png")
+        back_blank_colored.paste(num_img["img"], num_img["pos"], mask = num_img["img"])
+        back_blank_colored.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}.png")
