@@ -30,12 +30,12 @@ COLOR_ORDER = {'b', 'g', 'r', 'w', 'y'}
 -- w: white
 -- y: yellow
 COLORS_MASK = {
-    ['a'] = tonumber('11111', 2), -- 31
-    ['b'] = tonumber('1', 2), -- 1
-    ['g'] = tonumber('10', 2), -- 2
-    ['r'] = tonumber('100', 2), -- 4
-    ['w'] = tonumber('1000', 2), -- 8
-    ['y'] = tonumber('10000', 2) -- 16
+    a = tonumber('11111', 2), -- 31
+    b = tonumber('1', 2), -- 1
+    g = tonumber('10', 2), -- 2
+    r = tonumber('100', 2), -- 4
+    w = tonumber('1000', 2), -- 8
+    y = tonumber('10000', 2) -- 16
 }
 
 -- Hard-coding how each number is represented as a string on their 
@@ -77,19 +77,14 @@ function generated_back_url(num, color_mask)
         num_str = num_str .. NUMBERS_REP[num]
     end
 
-    return ASSET_GENED_URL .. "back_" .. num_str .. colors_str .. "png"
+    return ASSET_GENED_URL .. "back_" .. num_str .. colors_str .. ".png"
 end
 
--- Utility to return the size of a table.
-function tableSize(table)
-    local count = 0
-
-    for _,_ in pairs(table) do
-        count = count + 1
-    end
-
-    return count
+function getHanabiSwatchUrl(name)
+    name = "" .. name
+    return ASSET_URL .. "back_" .. name .. ".png"
 end
+
 
 function spawnDeckFromInfo(card_info, position)
 

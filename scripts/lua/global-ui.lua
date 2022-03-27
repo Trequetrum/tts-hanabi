@@ -275,8 +275,21 @@ function ui_hintOptions(color)
             width="400",
             height="400"
         },
-        children=ui_alignmentHelpers()
+        children={}
     }
+    local y_offset = 0
+    local x_offset = 0
+
+    local toggle_text = {
+        tag="Text",
+        value="<b>Talk to a player</b>",
+        attributes={
+            fontSize="20",
+            alignment="UpperCenter"
+        }
+    }
+    y_offset = y_offset - 30
+    table.insert(panel.children, toggle_text)
 
     local toggle_group = {
         tag="ToggleGroup",
@@ -285,10 +298,8 @@ function ui_hintOptions(color)
         },
         children={}
     }
-
     table.insert(panel.children, toggle_group)
-
-    local y_offset = 0
+    
     for _,player_color in ipairs(Player.getAvailableColors()) do
         if player_color ~= color and #getCardsInHandZone(player_color) > 0 then
             local is_on = false
@@ -296,45 +307,175 @@ function ui_hintOptions(color)
                 is_on = true
             end
 
+            local player_name = player_color
+            if getPlayer(player_color) ~= nil then
+                player_name = getPlayer(player_color).steam_name
+                if string.len(player_name) < 2 then
+                    player_name = player_color
+                end
+            end
+
+            local toggle_string = string.format(
+                '<textcolor color="#%s"><b>%s</b></textcolor>',
+                Color[player_color]:toHex(),
+                player_name
+            )
+
             table.insert(toggle_group.children, {
                 tag="Toggle",
-                value="Talk to the " .. player_color .. " player",
                 attributes={
                     id="talk_to_" .. player_color,
                     onValueChanged="onTalkToToggle",
                     isOn=is_on,
                     rectAlignment="UpperRight",
-                    offsetXY="0 " .. y_offset,
+                    offsetXY=x_offset.." "..y_offset,
                     textColor="#ffffff",
-                    width="200",
+                    width="120",
                     height="30"
-                }
+                },
+                children={{
+                    tag="Text",
+                    value=toggle_string
+                }}
             })
-            y_offset = y_offset - 30
+            x_offset = x_offset - 125
+            if x_offset < -300 then
+                y_offset = y_offset - 30
+                x_offset = 0
+            end
+            
         end
     end
 
+    y_offset = y_offset - 45
+
     if talk_to ~= "" then
-        local cards = getCardsInHandZone(talk_to)
-        for _,mask in pairs(COLORS_MASK) do
-            for _,card in pairs(cards) do
-                local color_mask = JSON.decode(card.memo).front_color_mask
-                if color_mask == mask then
-                    
+        -- include_rainbow
+        -- rainbow_wild
+        -- rainbow_one_per_firework
+        -- rainbow_firework
+        -- rainbow_multicolor
+        -- rainbow_talking
+        local game_rules = getCurrentGameRules()
+ 
+        local cards = map(
+            getCardsInHandZone(talk_to),
+            function(card)
+                local info = JSON.decode(card.memo)
+                return {
+                    number = info.front_number,
+                    color_mask = info.front_color_mask
+                }
+            end
+        )
+
+        local has_rainbow = false
+        for _,card in pairs(cards) do
+            if card.color_mask == COLORS_MASK.a then
+                has_rainbow = true
+                break
+            end
+        end
+
+        local hint_color_mask = 0
+        if game_rules.rainbow_multicolor then
+            hint_color_mask = bitwiseOr(map(cards, pluck("color_mask")))
+        else
+            hint_color_mask = bitwiseOr(filter(
+                map(cards, pluck("color_mask")),
+                function(mask)
+                    return mask ~= COLORS_MASK.a
+                end
+            ))
+        end
+
+        local button_width = 50
+        local button_height = 50
+        x_offset = 0
+        for c,mask in pairs(COLORS_MASK) do
+            if bit32.band(mask,hint_color_mask) == mask then
+                table.insert(panel.children, {
+                    tag="Image",
+                    attributes={
+                        image="swatch_" .. c,
+                        id="talk_to_" .. talk_to .. ":" .. c,
+                        onClick="onTalkToPlayer(" .. talk_to .. ")",
+                        offsetXY=x_offset .. " " .. y_offset,
+                        rectAlignment="UpperRight",
+                        width=button_width,
+                        height=button_height
+                    }
+                })
+                x_offset = x_offset - button_width - 10
+            end
+        end
+        y_offset = y_offset - button_height - 10
+        x_offset = 0
+
+        for i = #NUMBERS_REP, 1, -1 do
+            num_rep = NUMBERS_REP[i]
+            for _,num in
+                ipairs(noDuplicatesArray(map(cards, pluck("number"))))
+            do
+                if num == i then
+                    table.insert(panel.children, {
+                        tag="Image",
+                        attributes={
+                            image="swatch_" .. num_rep,
+                            id="talk_to_" .. talk_to .. ":" .. num_rep,
+                            onClick="onTalkToPlayer(" .. talk_to .. ")",
+                            offsetXY=x_offset .. " " .. y_offset,
+                            rectAlignment="UpperRight",
+                            width=button_width,
+                            height=button_height
+                        }
+                    })
+                    x_offset = x_offset - button_width - 10
                 end
             end
         end
     end
 
     return panel
-    
---     <ToggleGroup>
---     <VerticalLayout>
---         <Toggle>Toggle A</Toggle>
---         <Toggle>Toggle B</Toggle>
---         <Toggle>Toggle C</Toggle>
---     </VerticalLayout>
--- </ToggleGroup>
+end
+
+function onTalkToPlayer(player, talking_to, id)
+    local talk_char = id:sub(-1)
+    Temp_State.talking_to = nil
+    local is_number = tonumber(talk_char)
+
+    if is_number ~= nil then
+        giveHintNumber(talking_to, is_number)
+    else
+        giveHintColor(talking_to, COLORS_MASK[talk_char])
+    end
+
+    flipHintToken()
+    advanceTurnToken()
+end
+
+function giveHintNumber(player_color, number)
+    local cards = getCardsInHandZone(player_color)
+    for _,card in pairs(cards) do
+        -- front_number = num,
+        -- front_color_mask = mask,
+        -- back_number = 0,
+        -- back_color_mask = 0
+        local info = JSON.decode(card.memo)
+        if  info.back_number ~= number and
+            info.front_number == number
+        then
+            info.back_number = number
+            swapCardBack(card, number, info.back_color_mask)(
+                function(new_card)
+                    new_card.setHiddenFrom({player_color})
+                end
+            )
+        end
+    end
+end
+
+function giveHintColor(player_color, color_mask)
 
 end
 
@@ -385,6 +526,25 @@ function getTurnTokenLocation()
 end
 
 function ui_LoadUI()
+
+    if not Temp_State.isLoadedUiAssetBundle then
+        Temp_State.isLoadedUiAssetBundle = true
+        local assets = {}
+        for color,_ in pairs(COLORS_MASK) do
+            table.insert(assets, {
+                name="swatch_" .. color,
+                url=getHanabiSwatchUrl(color)
+            })
+        end
+        for _,num in ipairs(NUMBERS_REP) do
+            table.insert(assets, {
+                name="swatch_" .. num,
+                url=getHanabiSwatchUrl(num)
+            })
+        end
+
+        UI.setCustomAssets(assets)
+    end
 
     local globalLoayout = ui_defaults()
     local parent_table = globalLoayout[2].children
@@ -437,7 +597,7 @@ function getObjectByName(name)
         end
     end
 
-    printToAll("ALERT! Cannot find " .. name)
+    printToAll("ALERT! Cannot find with name: " .. name)
 
     return nil
 end
@@ -499,6 +659,11 @@ function getDeck()
 
     deck = getDeckInList(getObjects())
     Temp_State.deck = deck
+
+    if deck == nil then
+        printToAll("Alert: Failure to find hanabi deck")
+    end
+
     return deck
 
 end
@@ -511,6 +676,20 @@ function startGame(player)
     deal()
     moveTurnTokenTo(player.color)
 
+end
+
+function advanceTurnToken()
+    local location = getTurnTokenLocation()
+    local last = nil
+    for _,player_color in ipairs(Player.getAvailableColors()) do
+        if location == last then
+            moveTurnTokenTo(player_color)
+            return
+        end
+        last = player_color
+    end
+
+    printToAll("Alert: Failure to advance the turn token")
 end
 
 function moveTurnTokenTo(color)
@@ -526,6 +705,8 @@ function getPlayer(color)
             return player
         end
     end
+
+    printToAll("Alert: No seated player for " .. color)
 end
 
 function getHandZone(color)
@@ -534,6 +715,8 @@ function getHandZone(color)
             return oby
         end
     end
+
+    printToAll("Alert: Failure to find hand zone for " .. color)
 end
 
 function getCardsInHandZone(color)
@@ -544,6 +727,10 @@ function getCardsInHandZone(color)
         end
     end
     return cards
+end
+
+function flipHintToken()
+    log(">>>>> TODO, flipHintToken")
 end
 
 function deal()
@@ -573,7 +760,7 @@ function deal()
     player. I've picked red.
     ]]
     if #players == 1 then
-        if numCardsInHandZone("Red") == 0 then
+        if #getCardsInHandZone("Red") == 0 then
             deck.deal(5, "Red")
         end
     end

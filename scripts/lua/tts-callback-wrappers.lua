@@ -51,9 +51,36 @@ function spawnCard(front_url, back_url, state, pos)
                 
                 local new_card = custom_card.reload()
                 new_card.memo = JSON.encode(state)
-                callback(new_card)
+                waitUntilSpawned(new_card)(callback)
             end
         })
+    end
+end
+
+function swapCardBack(card, num, color_mask)
+
+    local keep_memo = card.memo
+    card.setCustomObject({
+        face = card.getCustomObject().face,
+        back = generated_back_url(num, color_mask)
+    })
+    
+    local new_card = card.reload()
+    new_card.memo = keep_memo
+    
+    return waitUntilSpawned(new_card)
+end
+
+function waitUntilSpawned(tts_object)
+    return function(callback)
+        if callback ~= nil then
+            Wait.condition(
+                function() callback(tts_object, true) end,
+                function() return not tts_object.spawning end,
+                5,
+                function() callback(tts_object, false) end
+            )
+        end
     end
 end
 
