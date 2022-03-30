@@ -1,3 +1,7 @@
+function logs(...)
+    log(table.concat(mapArray({...}, logString)," "))
+end
+
 function tableSize(table)
     local count = 0
     for _,_ in pairs(table) do
@@ -13,10 +17,18 @@ function concatTables(first, second)
     return first
 end
 
-function map(table, fn)
+function mapTable(table, fn)
     local t = {}
     for k,v in pairs(table) do
         t[k] = fn(v)
+    end
+    return t
+end
+
+function mapArray(array, fn)
+    local t = {}
+    for _,v in ipairs(array) do
+        table.insert(t, fn(v))
     end
     return t
 end
@@ -26,6 +38,16 @@ function filter(table, pred)
     for k,v in pairs(table) do
         if pred(v) then
             t[k] = v
+        end
+    end
+    return t
+end
+
+function filterArray(array, pred)
+    local t = {}
+    for _,v in ipairs(array) do
+        if pred(v) then
+            table.insert(t, v)
         end
     end
     return t
@@ -68,4 +90,39 @@ function noDuplicatesArray(array)
         end
     end
     return res
+end
+
+function reverseArray(array)
+    rev = {}
+    for i=#array, 1, -1 do
+        rev[#rev+1] = array[i]
+    end
+    return rev
+end
+
+-- return a function that has the first two arguments in reverse order
+function flip(fn)
+    return function(a,b,...)
+        return fn(b,a,...)
+    end
+end
+
+-- Flips the order of the first two curried function calls in a curried
+-- function
+function curryFlip(fn)
+    return function(...)
+        local argsA = {...}
+        return function(...)
+            return fn(...)(table.unpack(argsA))
+        end
+    end
+end
+
+-- Function application that takes the value first and the function
+-- second
+function applyFlipped(...)
+    local args = {...}
+    return function(fn)
+        return fn(table.unpack(args))
+    end
 end

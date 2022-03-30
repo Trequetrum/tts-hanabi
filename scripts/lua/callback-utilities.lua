@@ -29,7 +29,7 @@ function mapCallback(map_fn, callback_thunk)
 end
 
 function mapCallbackFlipped(callback_thunk, map_fn)
-    return mapCallback(map_fn, callback_thunk)
+    return flip(mapCallback)
 end
 
 -- Implement bind for callback_thunks. Think of this as a map 
@@ -65,6 +65,11 @@ function kleisliCallbackPipe(bind_fn_array)
     end
 end
 
+-- Same as bindCallback, only the second paramter is an array of bind_fn
+function bindKleisliCallbackPipe(callback_thunk, bind_fn_array)
+    return bindCallback(callback_thunk, kleisliCallbackPipe(bind_fn_array))
+end
+
 -- A wrapper around kleisliCallbackPipe, that invokes the returned
 -- function with an arguement, returning a callback_thunk instead of
 -- the composition.
@@ -72,6 +77,14 @@ end
 -- the starting value) "moves" from the left to the right.
 function kleisliPipeOn(init, bind_fn_array)
     return kleisliCallbackPipe(bind_fn_array)(init)
+end
+
+-- Same as kleisliPipeOn, but lets you calculate some initial value at
+-- the moment the callback_thunk is run
+function kleisliPipeOnLazy(thunk_init, bind_fn_array)
+    return function(callback)
+        kleisliCallbackPipe(bind_fn_array)(thunk_init())(callback)
+    end
 end
 
 -- Utility that will invoke a table of callback_thunks.
@@ -160,7 +173,8 @@ function tapLog(log_value)
     return function (...)
         local args = {...}
         return function (callback)
-            log(logString(args) .. " ::: " .. logString(log_value))
+
+            log(logString(log_value) .. ":\n" .. logString(args))
             resolveCallback(callback, table.unpack(args))
         end
     end
@@ -183,6 +197,15 @@ function tapCallback(callback_thunk)
                 resolveCallback(callback, table.unpack(args))
             end)
         end
+    end
+end
+
+-- Utility function most useful when used in a kleisliCallbackPipe
+--
+-- Ignore the output of a bindable function.
+function tapBind(bind_fn)
+    return function (...)
+        return tapCallback(bind_fn(...))(...)
     end
 end
 
@@ -214,3 +237,30 @@ function continueIf(pred)
         end
     end
 end
+
+-- Utility function most useful when used in a kleisliCallbackPipe
+--
+-- The returned callback_thunk additionally remembers and returns the
+-- value(s) the supplied function it was given
+function remember(bind_fn)
+    return function (...)
+        local args = {...}
+        return mapCallback(
+            function(...)
+                return table.unpack(
+                    noDuplicatesArray(
+                        concatTables({...}, args)
+                    )
+                )
+            end,
+            bind_fn(table.unpack(args))
+        )
+    end
+end
+
+-- function(move_coords)
+--     return mapCallback(
+--         function(v) return v, move_coords end,
+--         smoothMove(move_coords)(card)
+--     )
+-- end,

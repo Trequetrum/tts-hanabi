@@ -1,5 +1,3 @@
-
-
 function ui_defaults()
     return {{
         tag="Defaults",
@@ -55,6 +53,22 @@ function ui_alignmentHelpers()
     }}
 end
 
+function playerNameColored(player_color)
+    local player_name = player_color
+    if getPlayer(player_color, false) ~= nil then
+        player_name = getPlayer(player_color).steam_name
+        if string.len(player_name) < 2 then
+            player_name = player_color
+        end
+    end
+
+    return string.format(
+        '<textcolor color="#%s"><b>%s</b></textcolor>',
+        Color[player_color]:toHex(),
+        player_name
+    )
+end
+
 function ui_greeting(color)
     return {
         tag="Panel",
@@ -68,7 +82,7 @@ function ui_greeting(color)
         },
         children={{
             tag="Text",
-            value="Hello <b>" .. color .. "</b>, the game hasn't started yet",
+            value="Hello " .. playerNameColored(color) .. ", the game hasn't started yet",
             attributes={
                 alignment="UpperRight",
             }
@@ -96,45 +110,16 @@ function ui_pleaseWait(colors_string, color_turn)
         },
         children={{
             tag="Text",
-            value=color_turn .. "'s turn, please wait",
+            value=playerNameColored(color_turn) .. "'s turn, please wait",
             attributes={
                 alignment="UpperRight",
+                fontSize=20
             }
         }}
     }
 end
 
-function getCurrentGameRules()
-    local game_rules = JSON.decode(getObjectByName("token_mat").memo or "")
-    if game_rules == nil then
-        game_rules = {
-            include_rainbow = false,
-            rainbow_wild = true,
-            rainbow_one_per_firework = true,
-            rainbow_firework = true,
-            rainbow_multicolor = true,
-            rainbow_talking = false
-        }
-
-        getObjectByName("token_mat").memo = JSON.encode(game_rules)
-    end
-
-    return game_rules
-end
-
-function setGameRule(rule, value)
-    local is_on = false
-    if value == "True" or value == true then
-        is_on = true
-    end
-
-    local game_rules = getCurrentGameRules()
-    game_rules[rule] = is_on
-    getObjectByName("token_mat").memo = JSON.encode(game_rules)
-    return game_rules
-end
-
-function createGameRuleToggle(rule, text, y_offset)
+function ui_createGameRuleToggle(rule, text, y_offset)
 
     local game_rules = getCurrentGameRules()
 
@@ -143,7 +128,7 @@ function createGameRuleToggle(rule, text, y_offset)
         value=text,
         attributes={
             id=rule,
-            onValueChanged="onGameRuleToggle",
+            onValueChanged="ui_onGameRuleToggle",
             isOn=game_rules[rule],
             rectAlignment="UpperRight",
             offsetXY="0 " .. y_offset,
@@ -154,12 +139,12 @@ function createGameRuleToggle(rule, text, y_offset)
     }
 end
 
-function onGameRuleToggle(player, value, rule)
+function ui_onGameRuleToggle(player, value, rule)
     setGameRule(rule, value)
     ui_LoadUI()
 end
 
-function gameRuleDialog()
+function ui_gameRuleDialog()
 
     local game_rules = getCurrentGameRules()
 
@@ -169,7 +154,8 @@ function gameRuleDialog()
             rectAlignment="UpperRight",
             offsetXY="0 -180",
             width="400",
-            height="400"
+            height="400",
+            visibility=table.concat(Player.getAvailableColors(), "|")
         },
         children={}
     }
@@ -185,9 +171,9 @@ function gameRuleDialog()
     })
 
     y_offset = y_offset - 30
-    local include_rainbow_toggle = createGameRuleToggle(
+    local include_rainbow_toggle = ui_createGameRuleToggle(
         "include_rainbow",
-        "Include rainbow cards?",
+        "Include rainbow cards",
         y_offset
     )
     if not game_rules.include_rainbow then
@@ -198,18 +184,18 @@ function gameRuleDialog()
     if game_rules.include_rainbow then
 
         y_offset = y_offset - 30
-        table.insert(panel.children, createGameRuleToggle(
+        table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_wild",
-            "Rainbow cards are wild?",
+            "Rainbow cards are wild",
             y_offset
         ))
 
         y_offset = y_offset - 30
 
         if game_rules.rainbow_wild then
-            local sub_toggle = createGameRuleToggle(
+            local sub_toggle = ui_createGameRuleToggle(
                 "rainbow_one_per_firework",
-                "Maximum one wild card per firework?",
+                "Maximum one wild card per firework",
                 y_offset
             )
             sub_toggle.attributes.width = sub_toggle.attributes.width - 30
@@ -217,23 +203,23 @@ function gameRuleDialog()
         end
 
         y_offset = y_offset - 30
-        table.insert(panel.children, createGameRuleToggle(
+        table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_firework",
-            "Create a firework out of rainbow cards?",
+            "Create a firework out of rainbow cards",
             y_offset
         ))
 
         y_offset = y_offset - 30
-        table.insert(panel.children, createGameRuleToggle(
+        table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_multicolor",
-            "Rainbows cards are every color when giving hints?",
+            "Rainbows cards are every color when giving hints",
             y_offset
         ))
 
         y_offset = y_offset - 30
-        table.insert(panel.children, createGameRuleToggle(
+        table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_talking",
-            "Rainbow is a color (Use rainbow as a hint)?",
+            "Rainbow is a color (Use rainbow as a hint)",
             y_offset
         ))
 
@@ -262,10 +248,7 @@ function gameRuleDialog()
     return panel
 end
 
-function ui_hintOptions(color)
-
-    local talk_to = Temp_State.talking_to or ""
-
+function ui_activeTurnUi(color)
     local panel = {
         tag="Panel",
         attributes={
@@ -277,15 +260,66 @@ function ui_hintOptions(color)
         },
         children={}
     }
+
+    local message = {
+        tag="Text",
+        value=playerNameColored(color) .. ", it's your turn.",
+        attributes={
+            fontSize="20",
+            alignment="UpperRight"
+        }
+    }
+    table.insert(panel.children, message)
+
+    local num_hints = #availableHintTokens()
+    local txt = "You can play, discard,"
+    if num_hints < 1 then
+        txt = "You can only play or discard"
+    end
+
+    local options = {
+        tag="Text",
+        value=txt,
+        attributes={
+            fontSize="20",
+            alignment="UpperRight",
+            offsetXY="0 -30"
+        }
+    }
+
+    table.insert(panel.children, options)
+    if num_hints > 0 then
+        table.insert(panel.children, ui_hintOptions(color))
+    end
+
+
+    return panel
+end
+
+function ui_hintOptions(color)
+
+    local talk_to = Temp_State.talking_to or ""
+
+    local panel = {
+        tag="Panel",
+        attributes={
+            rectAlignment="UpperRight",
+            visibility=color,
+            offsetXY="0 -60",
+            width="400",
+            height="400"
+        },
+        children={}--ui_alignmentHelpers()
+    }
     local y_offset = 0
     local x_offset = 0
 
     local toggle_text = {
         tag="Text",
-        value="<b>Talk to a player</b>",
+        value="or talk to a player",
         attributes={
             fontSize="20",
-            alignment="UpperCenter"
+            alignment="UpperRight"
         }
     }
     y_offset = y_offset - 30
@@ -300,65 +334,61 @@ function ui_hintOptions(color)
     }
     table.insert(panel.children, toggle_group)
     
+    local players_by_color = {}
     for _,player_color in ipairs(Player.getAvailableColors()) do
         if player_color ~= color and #getCardsInHandZone(player_color) > 0 then
-            local is_on = false
-            if talk_to == player_color then
-                is_on = true
-            end
-
-            local player_name = player_color
-            if getPlayer(player_color) ~= nil then
-                player_name = getPlayer(player_color).steam_name
-                if string.len(player_name) < 2 then
-                    player_name = player_color
-                end
-            end
-
-            local toggle_string = string.format(
-                '<textcolor color="#%s"><b>%s</b></textcolor>',
-                Color[player_color]:toHex(),
-                player_name
-            )
-
-            table.insert(toggle_group.children, {
-                tag="Toggle",
-                attributes={
-                    id="talk_to_" .. player_color,
-                    onValueChanged="onTalkToToggle",
-                    isOn=is_on,
-                    rectAlignment="UpperRight",
-                    offsetXY=x_offset.." "..y_offset,
-                    textColor="#ffffff",
-                    width="120",
-                    height="30"
-                },
-                children={{
-                    tag="Text",
-                    value=toggle_string
-                }}
-            })
-            x_offset = x_offset - 125
-            if x_offset < -300 then
-                y_offset = y_offset - 30
-                x_offset = 0
-            end
-            
+            table.insert(players_by_color, player_color)
         end
+    end
+
+    function getXOffset(num, total)
+        local players_left = total - num
+        local to_the_right = (3 - (num % 3)) % 3
+        if players_left >= to_the_right then
+            return 0 - (120 * to_the_right)
+        else
+            return 0 - (120 * players_left)
+        end
+    end
+
+    for i,player_color in ipairs(players_by_color) do
+        
+        local is_on = false
+        if talk_to == player_color then
+            is_on = true
+        end
+
+        local toggle_string = playerNameColored(player_color)
+
+        table.insert(toggle_group.children, {
+            tag="Toggle",
+            attributes={
+                id="talk_to_" .. player_color,
+                onValueChanged="ui_onTalkToToggle",
+                isOn=is_on,
+                rectAlignment="UpperRight",
+                offsetXY=getXOffset(i, #players_by_color).." "..y_offset,
+                textColor="#ffffff",
+                width="120",
+                height="30"
+            },
+            children={{
+                tag="Text",
+                value=toggle_string
+            }}
+        })
+        if i % 3 == 0 then
+            y_offset = y_offset - 30
+        end
+            
     end
 
     y_offset = y_offset - 45
 
     if talk_to ~= "" then
-        -- include_rainbow
-        -- rainbow_wild
-        -- rainbow_one_per_firework
-        -- rainbow_firework
-        -- rainbow_multicolor
-        -- rainbow_talking
         local game_rules = getCurrentGameRules()
  
-        local cards = map(
+        local cards = mapArray(
             getCardsInHandZone(talk_to),
             function(card)
                 local info = JSON.decode(card.memo)
@@ -379,10 +409,10 @@ function ui_hintOptions(color)
 
         local hint_color_mask = 0
         if game_rules.rainbow_multicolor then
-            hint_color_mask = bitwiseOr(map(cards, pluck("color_mask")))
+            hint_color_mask = bitwiseOr(mapArray(cards, pluck("color_mask")))
         else
             hint_color_mask = bitwiseOr(filter(
-                map(cards, pluck("color_mask")),
+                mapArray(cards, pluck("color_mask")),
                 function(mask)
                     return mask ~= COLORS_MASK.a
                 end
@@ -393,18 +423,26 @@ function ui_hintOptions(color)
         local button_height = 50
         x_offset = 0
         for c,mask in pairs(COLORS_MASK) do
-            if bit32.band(mask,hint_color_mask) == mask then
+            if  bit32.band(mask,hint_color_mask) == mask and
+                (c ~= "a" or (has_rainbow and game_rules.rainbow_talking))
+            then
                 table.insert(panel.children, {
-                    tag="Image",
+                    tag="Panel",
                     attributes={
-                        image="swatch_" .. c,
                         id="talk_to_" .. talk_to .. ":" .. c,
-                        onClick="onTalkToPlayer(" .. talk_to .. ")",
+                        onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
                         offsetXY=x_offset .. " " .. y_offset,
                         rectAlignment="UpperRight",
                         width=button_width,
                         height=button_height
-                    }
+                    },
+                    children={{
+                        tag="Image",
+                        attributes={
+                            image="swatch_" .. c,
+                            preserveAspect=true
+                        }
+                    }}
                 })
                 x_offset = x_offset - button_width - 10
             end
@@ -415,20 +453,26 @@ function ui_hintOptions(color)
         for i = #NUMBERS_REP, 1, -1 do
             num_rep = NUMBERS_REP[i]
             for _,num in
-                ipairs(noDuplicatesArray(map(cards, pluck("number"))))
+                ipairs(noDuplicatesArray(mapArray(cards, pluck("number"))))
             do
                 if num == i then
                     table.insert(panel.children, {
-                        tag="Image",
+                        tag="Panel",
                         attributes={
-                            image="swatch_" .. num_rep,
                             id="talk_to_" .. talk_to .. ":" .. num_rep,
-                            onClick="onTalkToPlayer(" .. talk_to .. ")",
+                            onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
                             offsetXY=x_offset .. " " .. y_offset,
                             rectAlignment="UpperRight",
                             width=button_width,
                             height=button_height
-                        }
+                        },
+                        children={{
+                            tag="Image",
+                            attributes={
+                                image="swatch_" .. num_rep,
+                                preserveAspect=true
+                            }
+                        }}
                     })
                     x_offset = x_offset - button_width - 10
                 end
@@ -439,7 +483,7 @@ function ui_hintOptions(color)
     return panel
 end
 
-function onTalkToPlayer(player, talking_to, id)
+function ui_onTalkToPlayer(player, talking_to, id)
     local talk_char = id:sub(-1)
     Temp_State.talking_to = nil
     local is_number = tonumber(talk_char)
@@ -447,39 +491,13 @@ function onTalkToPlayer(player, talking_to, id)
     if is_number ~= nil then
         giveHintNumber(talking_to, is_number)
     else
-        giveHintColor(talking_to, COLORS_MASK[talk_char])
+        giveHintColors(talking_to, COLORS_MASK[talk_char])
     end
 
-    flipHintToken()
-    advanceTurnToken()
+    useHintToken()(advanceTurnToken)
 end
 
-function giveHintNumber(player_color, number)
-    local cards = getCardsInHandZone(player_color)
-    for _,card in pairs(cards) do
-        -- front_number = num,
-        -- front_color_mask = mask,
-        -- back_number = 0,
-        -- back_color_mask = 0
-        local info = JSON.decode(card.memo)
-        if  info.back_number ~= number and
-            info.front_number == number
-        then
-            info.back_number = number
-            swapCardBack(card, number, info.back_color_mask)(
-                function(new_card)
-                    new_card.setHiddenFrom({player_color})
-                end
-            )
-        end
-    end
-end
-
-function giveHintColor(player_color, color_mask)
-
-end
-
-function onTalkToToggle(player, toggle_is_on, id)
+function ui_onTalkToToggle(player, toggle_is_on, id)
     if toggle_is_on == "False" or not toggle_is_on then
         Temp_State.talking_to = nil
     else 
@@ -490,39 +508,73 @@ function onTalkToToggle(player, toggle_is_on, id)
     ui_LoadUI()
 end
 
-function positionHoveringBounds(position, bounds)
-    return (
-        position.x < bounds.center.x + (bounds.size.x / 2) and
-        position.x > bounds.center.x - (bounds.size.x / 2) and
-        position.z < bounds.center.z + (bounds.size.z / 2) and
-        position.z > bounds.center.z - (bounds.size.z / 2)
-    )
+function ui_askAfterRainbowPlayLocation(info)
+
+    local vis = getTurnTokenLocation()
+    if vis == "unknown" or vis == "token_mat" then
+        vis = table.concat(Player.getAvailableColors(), "|")
+    end
+
+    local panel = {
+        tag="Panel",
+        attributes={
+            id="ui_askAfterRainbowPlayLocation",
+            visibility=vis,
+            rectAlignment="MiddleCenter",
+            height=100,
+            width=90 * #info.color_masks
+        },
+        children={}
+    }
+
+    local x_offset = 0
+    for _,color_mask in ipairs(info.color_masks) do
+        local call_string = JSON.encode({
+            card_num=info.card_num,
+            card_color_mask=info.color_mask
+        })
+
+        table.insert(panel.children, {
+            tag="Panel",
+            attributes={
+                id="select_card_".. color_mask .. ":" .. info.card_num,
+                onClick="ui_onSelectCardPlayLocation(" .. info.card_num .. " " .. color_mask .. ")",
+                offsetXY=x_offset .. " 0",
+                rectAlignment="UpperLeft",
+                width=80,
+                height=100
+            },
+            children={{
+                tag="Image",
+                attributes={
+                    image="card_front_" .. info.card_num .. colorCharFromMask(color_mask),
+                    preserveAspect=true
+                }
+            }}
+        })
+        x_offset = x_offset + 90
+    end
+
+    return panel
 end
 
-function getTurnTokenLocation()
+function ui_onSelectCardPlayLocation(player, call_str)
 
-    local turn_token_position = getObjectByName("turn_token").getPosition()
+    local tokens = {}
+    for token in string.gmatch(call_str, "[^%s]+") do
+        table.insert(tokens, token)
+    end
+    
+    local num = tokens[1]
+    local color_mask = tokens[2]
 
-    if  positionHoveringBounds(
-            turn_token_position,
-            getObjectByName("token_mat").getBounds()
-        )
-    then
-        return "token_mat"
+    local info = Temp_State.askAfterRainbowPlayLocation
+    if info == nil then
+        printToAll("Alert: ui_onSelectCardPlayLocation run without Temp_State set")
+        return
     end
 
-    for _,player_color in ipairs(Player.getAvailableColors()) do
-        local bounds = {
-            center=getHandZone(player_color).getPosition(),
-            size={x=14,y=0,z=14},
-            offset={x=0,y=0,z=0}
-        }
-        if positionHoveringBounds(turn_token_position, bounds) then
-            return player_color
-        end
-    end
-
-    return "unknown"
+    info.callback(num, color_mask)
 end
 
 function ui_LoadUI()
@@ -543,6 +595,15 @@ function ui_LoadUI()
             })
         end
 
+        for color_char,_ in pairs(COLORS_MASK) do
+            for _,num in ipairs(NUMBERS_REP) do
+                table.insert(assets, {
+                    name="card_front_" .. num .. color_char,
+                    url=generated_front_url_char(num, color_char)
+                })
+            end
+        end
+
         UI.setCustomAssets(assets)
     end
 
@@ -557,211 +618,37 @@ function ui_LoadUI()
             table.insert(parent_table, ui_greeting(player_color))
         end
 
-        table.insert(parent_table, gameRuleDialog())
+        table.insert(parent_table, ui_gameRuleDialog())
     else
-        local wait_colors = ""
+        local wait_colors = {}
         for _,player_color in ipairs(all_colors) do
             if player_color ~= turn_token_location then
-                wait_colors = wait_colors .. player_color .. "|"
+                wait_colors = table.insert(wait_colors, player_color)
             end
         end
-        wait_colors = wait_colors:sub(1, -2)
-        table.insert(parent_table, ui_pleaseWait(wait_colors, turn_token_location))
+        wait_colors_str = table.concat(wait_colors, "|")
+        table.insert(parent_table, ui_pleaseWait(wait_colors_str, turn_token_location))
 
         if turn_token_location ~= "unknown" then
-            table.insert(parent_table, ui_hintOptions(turn_token_location))
+            table.insert(parent_table, ui_activeTurnUi(turn_token_location))
         end
 
+    end
+
+    if Temp_State.askAfterRainbowPlayLocation ~= nil then
+        table.insert(
+            parent_table,
+            ui_askAfterRainbowPlayLocation(
+                Temp_State.askAfterRainbowPlayLocation
+            )
+        )
     end
 
     UI.setXmlTable(globalLoayout)
 
-    -- local oby = getAllTokenMatObjects()
-    -- for _,ob in ipairs(oby) do
-    --     log(ob.getName() .. " : " .. logString(ob.getPosition()))
-    -- end
-
 end
 
-function getObjectByName(name)
-    if  Temp_State[name] ~= nil and 
-        not Temp_State[name].isDestroyed()
-    then
-        return Temp_State[name]
-    end
-
-    for _,thingy in ipairs(getObjects()) do
-        if thingy.getName() == name then
-            Temp_State[name] = thingy
-            return thingy
-        end
-    end
-
-    printToAll("ALERT! Cannot find with name: " .. name)
-
-    return nil
-end
-
-function getAllTokenMatObjects()
-
-    local mat_b = getObjectByName("token_mat").getBounds()
-    
-    local hit_objects = Physics.cast({
-        origin={
-            mat_b.center.x,
-            mat_b.center.y,
-            mat_b.center.z - (mat_b.size.z / 2)
-        },
-        direction={0,0,1},
-        type=3,
-        size={mat_b.size.x,4,0},
-        max_distance=mat_b.size.z
-    })
-
-    local acc = {}
-    for _,hit in pairs(hit_objects) do
-        local tts_object = hit.hit_object
-        if tts_object.type ~= "Surface" then
-            table.insert(acc, tts_object)
-        end
-    end
-
-    return acc
-end
-
-function getDeck()
-    if  Temp_State.deck ~= nil and 
-        not Temp_State.deck.isDestroyed()
-    then
-        return Temp_State.deck
-    end
-
-    function getDeckInList(list)
-        for _,thingy in ipairs(list) do
-            if thingy.getQuantity() > 0 then
-                local cards = thingy.getObjects()
-                for _,card in ipairs(cards) do
-                    if isHanabiCard(card) then
-                        Temp_State.deck = thingy
-                        return thingy
-                    end
-                end
-            end
-        end
-        return nil
-    end
-
-    local deck = getDeckInList(getAllTokenMatObjects())
-    if deck ~= nil then
-        Temp_State.deck = deck
-        return deck 
-    end
-
-    deck = getDeckInList(getObjects())
-    Temp_State.deck = deck
-
-    if deck == nil then
-        printToAll("Alert: Failure to find hanabi deck")
-    end
-
-    return deck
-
-end
-
-function startGame(player)
-
-    -- log(Player.getAvailableColors())
-    -- smoothMove({0,4,20})(getTurnToken())()
-
-    deal()
-    moveTurnTokenTo(player.color)
-
-end
-
-function advanceTurnToken()
-    local location = getTurnTokenLocation()
-    local last = nil
-    for _,player_color in ipairs(Player.getAvailableColors()) do
-        if location == last then
-            moveTurnTokenTo(player_color)
-            return
-        end
-        last = player_color
-    end
-
-    printToAll("Alert: Failure to advance the turn token")
-end
-
-function moveTurnTokenTo(color)
-    local pos = getHandZone(color).getPosition()
-    pos.y = 4
-    local token = getObjectByName("turn_token")
-    smoothMove(pos)(token)()
-end
-
-function getPlayer(color)
-    for _, player in ipairs(Player.getPlayers()) do
-        if player.color == color then
-            return player
-        end
-    end
-
-    printToAll("Alert: No seated player for " .. color)
-end
-
-function getHandZone(color)
-    for _,oby in ipairs(Hands.getHands()) do
-        if oby.getValue() == color then
-            return oby
-        end
-    end
-
-    printToAll("Alert: Failure to find hand zone for " .. color)
-end
-
-function getCardsInHandZone(color)
-    local cards = {}
-    for _,thing in ipairs(getHandZone(color).getObjects()) do
-        if isHanabiCard(thing) then
-            table.insert(cards, thing)
-        end
-    end
-    return cards
-end
-
-function flipHintToken()
-    log(">>>>> TODO, flipHintToken")
-end
-
-function deal()
-    local deck = getDeck()
-    if deck == nil then
-        broadcastToAll("No Hanabi Deck Discovered. Aborting")
-        return
-    end
-
-    local players = Player.getPlayers()
-    local dealAmount = nil
-
-    if #players > 3 then
-        dealAmount = 4
-    else
-        dealAmount = 5
-    end
-
-    for _, player in ipairs(players) do
-        if #player.getHandObjects() == 0 then
-            deck.deal(dealAmount, player.color)
-        end
-    end
-
-    --[[
-    This is just for testing purposes. Deal some cards to another
-    player. I've picked red.
-    ]]
-    if #players == 1 then
-        if #getCardsInHandZone("Red") == 0 then
-            deck.deal(5, "Red")
-        end
-    end
+function getHanabiSwatchUrl(name)
+    name = "" .. name
+    return ASSET_URL .. "back_" .. name .. ".png"
 end

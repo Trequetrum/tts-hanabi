@@ -34,6 +34,48 @@ function flipFaceUp(tts_object)
     return flipObjectPrime(tts_object, true)
 end
 
+function flipLockedObject(tts_object)
+    return kleisliPipeOn(tts_object, {
+        tapFunction(function(t) t.setLock(false) end),
+        flipObject,
+        waitUntilResting,
+        tapFunction(function(t) t.setLock(true) end)
+    })
+end
+
+function smoothRotation(rotation)
+    return function(tts_object)
+        return function(callback)
+            tts_object.setRotationSmooth(rotation, false, false)
+
+            if callback ~= nil then
+                Wait.condition(
+                    function() callback(tts_object, true) end,
+                    function() return not tts_object.isSmoothMoving() end,
+                    5,
+                    function() callback(tts_object, false) end
+                )
+            end
+        end
+    end
+end
+
+function smoothRelativeRotation(rotation)
+    return function(tts_object)
+        return function(callback)
+            tts_object.rotate(rotation)
+
+            if callback ~= nil then
+                Wait.condition(
+                    function() callback(tts_object, true) end,
+                    function() return not tts_object.isSmoothMoving() end,
+                    5,
+                    function() callback(tts_object, false) end
+                )
+            end
+        end
+    end
+end
 
 -- Wrapper around spawnObject that sets the custom images and state
 -- for a card. State is not longer in a card's lua, but can be found
@@ -60,9 +102,10 @@ end
 function swapCardBack(card, num, color_mask)
 
     local keep_memo = card.memo
+    local backing = generated_back_url(num, color_mask)
     card.setCustomObject({
         face = card.getCustomObject().face,
-        back = generated_back_url(num, color_mask)
+        back = backing
     })
     
     local new_card = card.reload()
@@ -106,6 +149,19 @@ function spawnFromContainer(guid)
     end
 end
 
+-- Callback_Thunk to instantly move an object, waits 1 frame before it
+-- returns.
+function move(world_position)
+    return function(tts_object)
+        tts_object.setPosition(world_position)
+
+        return mapCallback(
+            function() return tts_object end,
+            waitFrames(1)
+        )
+    end
+end
+
 -- Callback_Thunk for a smooth move that completes when the object stops
 -- or if 5 seconds have passed. The second parameter of the callback is
 -- a boolean that indicates whether the move was successful
@@ -113,8 +169,8 @@ function smoothMove(world_position)
     return function(tts_object)
         return function(callback)
             tts_object.setPositionSmooth(world_position, false, false)
+
             if callback ~= nil then
-              
                 Wait.condition(
                     function() callback(tts_object, true) end,
                     function() return not tts_object.isSmoothMoving() end,
@@ -122,6 +178,7 @@ function smoothMove(world_position)
                     function() callback(tts_object, false) end
                 )
             end
+
         end
     end
 end
