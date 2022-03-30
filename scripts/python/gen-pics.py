@@ -2,50 +2,58 @@ from math import floor
 from PIL import Image
 from itertools import chain, combinations
 
+def thumbnail_image(img_str, size):
+    img = Image.open(img_str)
+    img.thumbnail(size, reducing_gap=3.0)
+    return img.convert("RGBA")
+
+
 prefix_img_str = "../../assets/"
 
 # Load Blank Backing
-back_blank_img = Image.open(f"{prefix_img_str}back_blank.png").convert("RGBA")
+back_blank_img = Image.open(f"{prefix_img_str}back_blank_v2.png").convert("RGBA")
 back_blank_width, back_blank_height = back_blank_img.size
+
+thumbnail_size = floor(back_blank_width/3), floor(back_blank_height/3)
 
 # Load numbers to overlay backing
 back_num_imgs = list(map(
     lambda n: {
         "name": f"{n+1}",
-        "img": Image.open(f"{prefix_img_str}back_{n+1}.png").convert("RGBA")
+        "img": thumbnail_image(f"{prefix_img_str}back_{n+1}_v2.png", thumbnail_size)
+            .convert("RGBA")
     },
     range(5)
 ))
 
 # Position numbers to overlay backing
 for img_ref in back_num_imgs:
-    width, height = img_ref['img'].size
     img_ref['pos'] = (
-        floor(back_blank_width / 2) - floor(width / 2),
-        back_blank_height - 200 + floor(height/2)
+        floor(back_blank_width / 2) - floor(thumbnail_size[0] / 2),
+        back_blank_height - thumbnail_size[1]
     )
 
 # Load color swatches to overlay backing
 back_colr_imgs = list(map(
     lambda c: {
         "name": c,
-        "img": Image.open(f"{prefix_img_str}back_{c}.png").convert("RGBA")
+        "img": thumbnail_image(f"{prefix_img_str}back_{c}_v2.png", thumbnail_size)
     }, 
     ['b','g','r','w','y']
 ))
 
 # Position color swatches to overlay backing
 for i, img_ref in enumerate(back_colr_imgs):
-    width, height = img_ref['img'].size
     if(i < 3):
         img_ref['pos'] = (
-            (floor(back_blank_width / 4) * (i + 1)) - floor(width / 2),
-            170 - floor(height/2)
+            thumbnail_size[0] * i,
+            0 # floor(thumbnail_size[1]/2)
         )
     else:
+        offset = i % 3
         img_ref['pos'] = (
-            (floor(back_blank_width / 3) * (i - 2)) - floor(width / 2),
-            70 - floor(height/2)
+            (floor(back_blank_width / 3) * (i - 2)) - floor(thumbnail_size[0] / 2),
+            thumbnail_size[1] - floor(thumbnail_size[1]/3)
         )
 
 # Return an iterable over all combinations of the input iterable
