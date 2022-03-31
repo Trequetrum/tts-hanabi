@@ -650,5 +650,5 @@ end
 
 function getHanabiSwatchUrl(name)
     name = "" .. name
-    return ASSET_URL .. "back_" .. name .. ".png"
+    return ASSET_URL .. "back_" .. name .. "_v2.png"
 end

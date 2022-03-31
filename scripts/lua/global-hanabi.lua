@@ -7,7 +7,7 @@
 -- stable/fast hosts).
 ASSET_URL = "https://raw.githubusercontent.com/Trequetrum/tts-hanabi/main/assets/"
 ASSET_GENED_URL = ASSET_URL .. "generated/"
-ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank.png"
+ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank_v2.png"
 
 -- Filenames describe cards and have a canonical order for colors as
 -- listed here
