@@ -2,7 +2,7 @@
 -- this shows automated player 'notes' on the back of their cards
 function generated_back_url(num, color_mask)
     if num == 0 and color_mask == 0 then
-        return ASSET_URL .. "back_blank.png"
+        return ASSET_BACK_BLANK_URL
     end
 
     local colors_str = ""
@@ -21,7 +21,7 @@ function generated_back_url(num, color_mask)
 end
 
 function generated_front_url_char(num, color_char)
-    return ASSET_URL .. color_char .. num .. ".png"
+    return ASSET_URL .. color_char .. num .. "_v2.png"
 end
 
 function generated_front_url(num, color_mask)

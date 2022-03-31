@@ -257,10 +257,3 @@ function remember(bind_fn)
         )
     end
 end
-
--- function(move_coords)
---     return mapCallback(
---         function(v) return v, move_coords end,
---         smoothMove(move_coords)(card)
---     )
--- end,
