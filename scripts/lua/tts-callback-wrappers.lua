@@ -226,3 +226,17 @@ function waitUntilResting(tts_object)
         )
     end
 end
+
+function dealToPlayer(player_color, amount, container)
+    return function(callback)
+        local target_hand_size = #getCardsInHandZone(player_color) + amount
+        container.deal(amount, player_color)
+
+        Wait.condition(
+            function() callback(player_color, amount, container, true) end,
+            function() return #getCardsInHandZone(player_color) == target_hand_size end,
+            5,
+            function() callback(player_color, amount, container, false) end
+        )
+    end
+end

@@ -52,31 +52,40 @@ function getAllTokenMatObjects()
 end
 
 function advanceTurnToken()
+    kleisliCallbackPipe({
+        turnDeal,
+        continueIf(function(...)
+            local args = {...}
+            return args[#args] ~= false
+        end),
+        function()
+        
+            local location = getTurnTokenLocation()
+            local turn_order = {}
 
-    turnDeal()
-    
-    local location = getTurnTokenLocation()
-    local turn_order = {}
-
-    for _,player_color in ipairs(Player.getAvailableColors()) do
-        if #getCardsInHandZone(player_color) > 0 then
-            table.insert(turn_order, player_color)
-        end
-    end
-
-    for i, player_color in ipairs(turn_order) do
-        if player_color == location then
-            if i < #turn_order then
-                moveTurnTokenTo(turn_order[i+1])
-                return
-            else
-                moveTurnTokenTo(turn_order[1])
-                return
+            for _,player_color in ipairs(Player.getAvailableColors()) do
+                if #getCardsInHandZone(player_color) > 0 then
+                    table.insert(turn_order, player_color)
+                end
             end
-        end
-    end
 
-    printToAll("Alert: Failure to advance the turn token")
+            for i, player_color in ipairs(turn_order) do
+                if player_color == location then
+                    if i < #turn_order then
+                        moveTurnTokenTo(turn_order[i+1])
+                        return
+                    else
+                        moveTurnTokenTo(turn_order[1])
+                        return
+                    end
+                end
+            end
+
+            printToAll("Alert: Failure to advance the turn token")
+
+    
+        end
+    })()()
 end
 
 function moveTurnTokenTo(color)

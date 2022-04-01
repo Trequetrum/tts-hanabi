@@ -19,6 +19,14 @@ function liftValuesToCallback(...)
     end
 end
 
+function liftFunctionTocallback(fn, ...)
+    local args = {...}
+    return function(callback)
+        local results = {fn(table.unpack(args))}
+        resolveCallback(callback, table.unpack(results))
+    end
+end
+
 -- Shape preserving map over a callback_thunk
 function mapCallback(map_fn, callback_thunk)
     return function(callback)
@@ -38,7 +46,10 @@ end
 function bindCallback(callback_thunk, bind_fn)
     return function(callback)
         callback_thunk(function(...)
-            bind_fn(...)(callback)
+            local thunk = bind_fn(...)
+            if thunk ~= nil and type(thunk) == "function" then
+                thunk(callback)
+            end
         end)
     end
 end
@@ -119,7 +130,11 @@ end
 function joinWithTable(callback_thunk, key)
     return function(acc_table)
         return mapCallback(
-            function(result)
+            function(...)
+                local result = {...}
+                if #result == 1 then
+                    result = result[1]
+                end
                 acc_table[key] = result
                 return acc_table
             end,

@@ -104,29 +104,52 @@ function resetCards()
 end
 
 function turnDeal()
+
+    if Temp_State.dealing == true then
+        return liftValuesToCallback({false})
+    end
+
+    Temp_State.dealing = true
+
     local deck = getHanabiDeck(false)
     if deck == nil then
         printToAll("Info: No more cards, no end of turn deal")
-        return
+        return liftValuesToCallback({false})
     end
 
-    local dealAmount = getCurrentDealAmount()
-
+    local callback_thunks = {}
     for _,player_color in ipairs(Player.getAvailableColors()) do
         
-        kleisliPipeOn(dealAmount - #getCardsInHandZone(player_color), {
-            tapCallback(waitFrames(120)),
-            tapFunction(function(diff)
-                local cards = getCardsInHandZone(player_color)
-                local new_diff = dealAmount - #cards
-                local min_diff = math.min(diff, new_diff)
-                if #cards > 0 and min_diff > 0 then
-                    deck.deal(min_diff, player_color)
+        table.insert(callback_thunks, kleisliPipeOn({
+            player_color=player_color,
+            hand_size=#getCardsInHandZone(player_color)
+        }, {
+            tapCallback(waitFrames(5)),
+            function(info)
+                local u_deck = getHanabiDeck(false)
+                local hand_size = info.hand_size
+                local u_player_color = info.player_color
+                local dealAmount = getCurrentDealAmount()
+                local new_hand_size = #getCardsInHandZone(u_player_color)
+                local min_diff = math.min(dealAmount-hand_size, dealAmount-new_hand_size)
+
+                if new_hand_size > 0 and min_diff > 0 then
+                    return dealToPlayer(u_player_color, 1, u_deck)
+                else
+                    return liftValuesToCallback(u_player_color, 0, u_deck, true)
                 end
-            end)
-        })()
+            end
+        }))
      
     end
+
+    table.insert(callback_thunks, liftFunctionTocallback(function()
+        Temp_State.dealing = false
+        return true
+    end, 1))
+
+    return seriesCallback(callback_thunks)
+
 end
 
 function getCurrentScore()

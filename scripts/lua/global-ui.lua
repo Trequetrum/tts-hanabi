@@ -12,7 +12,7 @@ function ui_defaults()
         tag="Panel",
         attributes={
             id="parent_panel",
-            height="95%",
+            height="50%",
             width="95%"
         },
         children={}

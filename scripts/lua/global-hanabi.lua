@@ -6,7 +6,7 @@
 -- They can be uploaded to steam cloud eventually (Though both are
 -- stable/fast hosts).
 ASSET_URL = "https://raw.githubusercontent.com/Trequetrum/tts-hanabi/main/assets/"
-ASSET_VERSION = "v3"
+ASSET_VERSION = "v2"
 ASSET_GENED_URL = ASSET_URL .. "generated/"
 ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank_" .. ASSET_VERSION .. ".png"
 
@@ -120,12 +120,17 @@ function onObjectEnterZone(tts_zone, tts_object)
         kleisliPipeOn(tts_object, {
             continueIf(isHanabiCard),
             continueIf(function(card)
-                return Temp_State.active_cards[card.getGUID()] ~= true
+                local continue = Temp_State.active_cards[card.getGUID()] ~= true
+                Temp_State.active_cards[card.getGUID()] = true
+                return continue
             end),
             waitUntilResting,
-            continueIf(isObjectInZone(tts_zone)),
-            tapFunction(function(card)
-                Temp_State.active_cards[card.getGUID()] = true
+            continueIf(function(card)
+                local continue = isObjectInZone(tts_zone)(card)
+                if not continue then
+                    Temp_State.active_cards[card.getGUID()] = false
+                end
+                return continue
             end),
             tapFunction(function(card) card.setHiddenFrom({}) end),
             flipFaceUp,
