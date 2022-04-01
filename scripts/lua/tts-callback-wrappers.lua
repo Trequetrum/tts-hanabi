@@ -1,6 +1,11 @@
 
 function flipObject(tts_object)
     return function(callback)
+        if tts_object.getLock() == true then
+            flipLockedObject(tts_object)(callback)
+            return
+        end
+
         local face_down = tts_object.is_face_down
         tts_object.flip()
         if callback ~= nil then

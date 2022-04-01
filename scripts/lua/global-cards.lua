@@ -17,11 +17,11 @@ function generated_back_url(num, color_mask)
         num_str = num_str .. NUMBERS_REP[num]
     end
 
-    return ASSET_GENED_URL .. "back_" .. num_str .. colors_str .. ".png"
+    return ASSET_GENED_URL .. "back_" .. num_str .. colors_str .. "_" .. ASSET_VERSION .. ".png"
 end
 
 function generated_front_url_char(num, color_char)
-    return ASSET_URL .. color_char .. num .. "_v2.png"
+    return ASSET_URL .. color_char .. num .. "_" .. ASSET_VERSION .. ".png"
 end
 
 function generated_front_url(num, color_mask)
@@ -124,7 +124,6 @@ function discardCard(card)
 
             return move_coords
         end, {
-            tapFunction(function() recoverHintToken()() end),
             remember(curryFlip(smoothMove)(card)),
             remember(smoothRotation({0,180,0})),
             function(card, _, move_coords)
@@ -231,14 +230,18 @@ function askAfterRainbowPlayLocation(card)
 
     for _,color_mask in pairs(COLORS_MASK) do
         if  -- We can only play rainbow if it is it's own firework and
-            (color_mask ~= COLORS_MASK.a or
-            getCurrentGameRules().rainbow_firework) and
+            (   color_mask ~= COLORS_MASK.a or
+                getCurrentGameRules().rainbow_firework
+            ) and
             -- We can only play a number if there's a sport for it and
             played_cards[color_mask].count + 1 == card_num and
             -- Either the firework has no rainbow yet or it's the
             -- rainbow firework (So it can have as many as it likes)
-            ((not played_cards[color_mask].rainbow) or
-            color_mask == COLORS_MASK.a)
+            -- or we can have more than one wild card per firework
+            (   (not played_cards[color_mask].rainbow) or
+                color_mask == COLORS_MASK.a or
+                (not getCurrentGameRules().rainbow_one_per_firework)
+            )
         then
         -- logs(">>>>>\n\n>>>>> color_mask", color_mask, "\n",
         -- ">>>>> getCurrentGameRules().rainbow_firework", getCurrentGameRules().rainbow_firework, "\n",

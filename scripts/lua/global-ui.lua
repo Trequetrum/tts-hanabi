@@ -521,18 +521,14 @@ function ui_askAfterRainbowPlayLocation(info)
             id="ui_askAfterRainbowPlayLocation",
             visibility=vis,
             rectAlignment="MiddleCenter",
-            height=100,
-            width=90 * #info.color_masks
+            height=400,
+            width=125 * #info.color_masks
         },
         children={}
     }
 
     local x_offset = 0
     for _,color_mask in ipairs(info.color_masks) do
-        local call_string = JSON.encode({
-            card_num=info.card_num,
-            card_color_mask=info.color_mask
-        })
 
         table.insert(panel.children, {
             tag="Panel",
@@ -541,8 +537,8 @@ function ui_askAfterRainbowPlayLocation(info)
                 onClick="ui_onSelectCardPlayLocation(" .. info.card_num .. " " .. color_mask .. ")",
                 offsetXY=x_offset .. " 0",
                 rectAlignment="UpperLeft",
-                width=80,
-                height=100
+                width=120,
+                height=400
             },
             children={{
                 tag="Image",
@@ -552,7 +548,7 @@ function ui_askAfterRainbowPlayLocation(info)
                 }
             }}
         })
-        x_offset = x_offset + 90
+        x_offset = x_offset + 125
     end
 
     return panel
@@ -650,5 +646,5 @@ end
 
 function getHanabiSwatchUrl(name)
     name = "" .. name
-    return ASSET_URL .. "back_" .. name .. "_v2.png"
+    return ASSET_URL .. "back_" .. name .. "_" .. ASSET_VERSION .. ".png"
 end

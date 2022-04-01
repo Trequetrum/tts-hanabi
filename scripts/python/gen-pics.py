@@ -15,11 +15,11 @@ def resize_image(img_str, size):
         reducing_gap=3.0
     ).convert("RGBA")
 
-
+asset_version = "v3"
 prefix_img_str = "../../assets/"
 
 # Load Blank Backing
-back_blank_img = Image.open(f"{prefix_img_str}back_blank_grey_v3.png").convert("RGBA")
+back_blank_img = Image.open(f"{prefix_img_str}back_blank_grey_{asset_version}.png").convert("RGBA")
 back_blank_width, back_blank_height = back_blank_img.size
 
 thumbnail_size = floor(back_blank_width/3), floor(back_blank_height/3)
@@ -28,7 +28,7 @@ thumbnail_size = floor(back_blank_width/3), floor(back_blank_height/3)
 back_num_imgs = list(map(
     lambda n: {
         "name": f"{n+1}",
-        "img": resize_image(f"{prefix_img_str}back_{n+1}_v3.png", thumbnail_size)
+        "img": resize_image(f"{prefix_img_str}back_{n+1}_{asset_version}.png", thumbnail_size)
             .convert("RGBA")
     },
     range(5)
@@ -46,7 +46,7 @@ for img_ref in back_num_imgs:
 back_colr_imgs = list(map(
     lambda c: {
         "name": c,
-        "img": resize_image(f"{prefix_img_str}back_{c}_v3.png", thumbnail_size)
+        "img": resize_image(f"{prefix_img_str}back_{c}_{asset_version}.png", thumbnail_size)
     }, 
     ['b','g','r','w','y']
 ))
@@ -83,9 +83,9 @@ for color_subset in all_subsets(back_colr_imgs):
         color_string += color_img['name']
         back_blank.paste(color_img["img"], color_img["pos"], mask = color_img["img"])
     
-    back_blank.save(f"{prefix_img_str}generated/back_{color_string}_v3.png")
+    back_blank.save(f"{prefix_img_str}generated/back_{color_string}_{asset_version}.png")
 
     for num_img in back_num_imgs:
         back_blank_colored = back_blank.copy()
         back_blank_colored.paste(num_img["img"], num_img["pos"], mask = num_img["img"])
-        back_blank_colored.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}_v3.png")
+        back_blank_colored.save(f"{prefix_img_str}generated/back_{num_img['name']}{color_string}_{asset_version}.png")

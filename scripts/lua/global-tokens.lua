@@ -121,7 +121,7 @@ function useHintToken()
     return kleisliPipeOnLazy(availableHintTokens, {
         function(ts)
             if #ts > 0 then
-                return flipLockedObject(ts[1])
+                return flipObject(ts[1])
             else
                 return liftValuesToCallback(nil)
             end
@@ -133,7 +133,7 @@ function recoverHintToken()
     return kleisliPipeOnLazy(usedHintTokens, {
         function(ts)
             if #ts > 0 then
-                return flipLockedObject(ts[1])
+                return flipObject(ts[1])
             else
                 return liftValuesToCallback(1)
             end
@@ -142,7 +142,7 @@ function recoverHintToken()
 end
 
 function resetHintTokens()
-    parallelCallback(mapArray(usedHintTokens(), flipLockedObject))()
+    parallelCallback(mapArray(usedHintTokens(), flipObject))()
 end
 
 function getFuseTokens()

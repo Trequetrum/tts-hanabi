@@ -6,8 +6,9 @@
 -- They can be uploaded to steam cloud eventually (Though both are
 -- stable/fast hosts).
 ASSET_URL = "https://raw.githubusercontent.com/Trequetrum/tts-hanabi/main/assets/"
+ASSET_VERSION = "v3"
 ASSET_GENED_URL = ASSET_URL .. "generated/"
-ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank_v2.png"
+ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank_" .. ASSET_VERSION .. ".png"
 
 -- Filenames describe cards and have a canonical order for colors as
 -- listed here
@@ -56,7 +57,10 @@ LAYOUT_CARD_HEIGHT = 3.5
 -- Store info that is fine to get lost when the game is reset. Mostly
 -- used as a cashe of commonly searched for items (like the hanabi 
 -- deck). Basically name-spaces global state.
-Temp_State={}
+Temp_State={
+    active_cards={}
+}
+
 
 function colorCharFromMask(color_mask)
     for char, mask in pairs(COLORS_MASK) do
@@ -115,16 +119,29 @@ function onObjectEnterZone(tts_zone, tts_object)
     then
         kleisliPipeOn(tts_object, {
             continueIf(isHanabiCard),
+            continueIf(function(card)
+                return Temp_State.active_cards[card.getGUID()] ~= true
+            end),
             waitUntilResting,
             continueIf(isObjectInZone(tts_zone)),
+            tapFunction(function(card)
+                Temp_State.active_cards[card.getGUID()] = true
+            end),
+            tapFunction(function(card) card.setHiddenFrom({}) end),
+            flipFaceUp,
+            tapCallback(waitFrames(60)),
             smoothRelativeMove({0, 10, 0}),
             function(card)
                 if tts_zone.guid == discardzone_guid then
+                    recoverHintToken()()
                     return discardCard(card)
                 elseif tts_zone.guid == playzone_guid then
                     return playCard(card)
                 end
             end,
+            tapFunction(function(card)
+                Temp_State.active_cards[card.getGUID()] = false
+            end),
             tapFunction(advanceTurnToken)
         })()
 
@@ -144,7 +161,7 @@ function onObjectEnterZone(tts_zone, tts_object)
                                 -- to run very often or for very long, so who cares?
                                 continueIf(isObjectInZone(tts_zone)),
                                 spawnFromContainer(maybe_card.guid),
-                                tapCallback(waitFrames(20)),
+                                tapCallback(waitFrames(200)),
                             })
                         )
                     end

@@ -45,6 +45,7 @@ end
 
 function startGame(player)
 
+    Temp_State.active_cards = {}
     startDeal()(function()
         moveTurnTokenTo(player.color)
     end)
@@ -105,27 +106,26 @@ end
 function turnDeal()
     local deck = getHanabiDeck(false)
     if deck == nil then
-        local token_mat_obs = getAllTokenMatObjects()
-        for _,tts_object in pairs(token_mat_obs) do
-            if isHanabiCard(tts_object) then
-                deck = tts_object
-                break
-            end
-        end
-        if deck == nil then
-            printToAll("Info: No more cards, no end of turn deal")
-            return
-        end
+        printToAll("Info: No more cards, no end of turn deal")
+        return
     end
 
     local dealAmount = getCurrentDealAmount()
 
     for _,player_color in ipairs(Player.getAvailableColors()) do
-        local cards = getCardsInHandZone(player_color)
-        local deal_diff = dealAmount - #cards
-        if #cards > 0 and deal_diff > 0 then
-            deck.deal(deal_diff, player_color)
-        end
+        
+        kleisliPipeOn(dealAmount - #getCardsInHandZone(player_color), {
+            tapCallback(waitFrames(120)),
+            tapFunction(function(diff)
+                local cards = getCardsInHandZone(player_color)
+                local new_diff = dealAmount - #cards
+                local min_diff = math.min(diff, new_diff)
+                if #cards > 0 and min_diff > 0 then
+                    deck.deal(min_diff, player_color)
+                end
+            end)
+        })()
+     
     end
 end
 
