@@ -658,11 +658,13 @@ function setTableImage(has_rainbow, has_rainbow_firework)
 
     local image_prefix = ASSET_URL .. "hanabi_layout_game_mat_img"
     local image_postfix = "_" .. ASSET_VERSION .. ".png"
-    local updated_img = image_prefix .. image_postfix
-    if has_rainbow and not has_rainbow_firework then
-        updated_img = image_prefix .. "_w_" .. image_postfix
+    local updated_img = ""
+    if not has_rainbow then
+        updated_img = image_prefix .. image_postfix
+    elseif has_rainbow_firework then
+        updated_img = image_prefix .. "_wf" .. image_postfix
     else
-        updated_img = image_prefix .. "_wf_" .. image_postfix
+        updated_img = image_prefix .. "_w" .. image_postfix
     end
 
     if current_table.image ~= updated_img then

@@ -265,8 +265,7 @@ function startDeal()
             resetHintTokens()
             resetFuseTokens()
             resetCards()
-            local game_rules = getCurrentGameRules()
-            return game_rules.include_rainbow
+            return getCurrentGameRules().include_rainbow
         end,{
             spawnHanabiDeck,
             scale({x=1.65,y=1,z=1.65}),
