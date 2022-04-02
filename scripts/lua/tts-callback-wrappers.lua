@@ -212,7 +212,7 @@ function waitFrames(n)
         num = n
     end
     return function(callback)
-        Wait.frames(callback, n)
+        Wait.frames(callback, num)
     end
 end
 
@@ -238,5 +238,20 @@ function dealToPlayer(player_color, amount, container)
             5,
             function() callback(player_color, amount, container, false) end
         )
+    end
+end
+
+function scale(scale)
+    local scale_vector = Vector(scale)
+    return function(tts_object)
+        return function(callback)
+            tts_object.scale(scale_vector)
+            Wait.condition(
+                function() callback(tts_object, scale_vector, true) end,
+                function() return tts_object.getScale() == scale_vector end,
+                5,
+                function() callback(tts_object, scale_vector, false) end
+            )
+        end
     end
 end

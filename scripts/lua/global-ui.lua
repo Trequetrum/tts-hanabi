@@ -511,7 +511,7 @@ end
 function ui_askAfterRainbowPlayLocation(info)
 
     local vis = getTurnTokenLocation()
-    if vis == "unknown" or vis == "token_mat" then
+    if vis == "token_mat" then
         vis = table.concat(Player.getAvailableColors(), "|")
     end
 
@@ -603,6 +603,9 @@ function ui_LoadUI()
         UI.setCustomAssets(assets)
     end
 
+    local game_rules = getCurrentGameRules()
+    setTableImage(game_rules.include_rainbow, game_rules.rainbow_firework)
+
     local globalLoayout = ui_defaults()
     local parent_table = globalLoayout[2].children
 
@@ -647,4 +650,24 @@ end
 function getHanabiSwatchUrl(name)
     name = "" .. name
     return ASSET_URL .. "back_" .. name .. "_" .. ASSET_VERSION .. ".png"
+end
+
+function setTableImage(has_rainbow, has_rainbow_firework)
+    local table_surface = getObjectByName("table_surface")
+    local current_table = table_surface.getCustomObject()
+
+    local image_prefix = ASSET_URL .. "hanabi_layout_game_mat_img"
+    local image_postfix = "_" .. ASSET_VERSION .. ".png"
+    local updated_img = image_prefix .. image_postfix
+    if has_rainbow and not has_rainbow_firework then
+        updated_img = image_prefix .. "_w_" .. image_postfix
+    else
+        updated_img = image_prefix .. "_wf_" .. image_postfix
+    end
+
+    if current_table.image ~= updated_img then
+        current_table.image = updated_img
+        table_surface.setCustomObject(current_table)
+        table_surface.reload()
+    end
 end

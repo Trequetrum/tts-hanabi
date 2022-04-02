@@ -1,0 +1,28 @@
+<Defaults>
+  <Text color="#ffffff" fontSize="100"/>
+</Defaults>
+
+<Panel
+    id="play_zone_board"
+    position="0 0 -80"
+    height="1700"
+    width="1700">
+
+    <Text fontSize="300" alignment="MiddleCenter">PLAY</Text>
+    <Text alignment="MiddleCenter">X</Text>
+    <Text alignment="UpperLeft">↖</Text>
+    <Text alignment="UpperRight">↗︎︎</Text>
+    <Text alignment="LowerLeft">↙</Text>
+    <Text alignment="LowerRight">↘︎︎</Text>
+</Panel>
+
+<!-- Useful for seeing the corners of a panel.
+<Text alignment="MiddleCenter">X</Text>
+<Text alignment="UpperLeft">↖</Text>
+<Text alignment="UpperRight">↗︎︎</Text>
+<Text alignment="LowerLeft">↙</Text>
+<Text alignment="LowerRight">↘︎︎</Text>
+
+<Include src="xml/play-zone-board"/>
+
+-->

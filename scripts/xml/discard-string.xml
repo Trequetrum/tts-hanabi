@@ -1,0 +1,51 @@
+<Defaults>
+    <Text 
+        color="#ffffff"
+        fontSize="200" 
+        alignment="MiddleCenter"
+    />
+    <Panel 
+        height="1700"
+        width="2300"
+    />
+</Defaults>
+
+<Panel
+    id="play_zone_board"
+    position="0 0 -100"
+    visibility="White|Brown|Red|Grey|Black"
+>
+    <Text rotation="0 0 0">
+        <b>DISCARD</b>
+    </Text>
+</Panel>
+
+<Panel
+    id="play_zone_board"
+    position="0 0 -60"
+    visibility="Orange|Yellow"
+>
+    <Text rotation="0 0 270">
+        <b>DISCARD</b>
+    </Text>
+</Panel>
+
+<Panel
+    id="play_zone_board"
+    position="0 0 -60"
+    visibility="Green|TealBlue"
+>
+    <Text rotation="0 0 180">
+        <b>DISCARD</b>
+    </Text>
+</Panel>
+
+<Panel
+    id="play_zone_board"
+    position="0 0 -60"
+    visibility="Purple|Pink"
+>
+    <Text rotation="0 0 90">
+        <b>DISCARD</b>
+    </Text>
+</Panel>

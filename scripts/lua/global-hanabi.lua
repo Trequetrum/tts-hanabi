@@ -51,8 +51,19 @@ COLOR_LAYOUT = {
     [5]=1
 }
 
-LAYOUT_CARD_WIDTH = 2.2
-LAYOUT_CARD_HEIGHT = 3.5
+LAYOUT_CARD_WIDTH = 4
+LAYOUT_CARD_HEIGHT = 5.58
+
+-- While I generally prefer to find things without relying on GUID
+-- (They're so fickle!). Scripting zones arn't external resources,
+-- they're always made within TTS. GUID is as good as a name then.
+TTS_GUID = {
+    token_mat = "5f9086",
+    play_mat = "4739d6",
+    discard_mat = "438d80",
+    layout_playzone = "394402",
+    layout_discardzone = "df2727"
+}
 
 -- Store info that is fine to get lost when the game is reset. Mostly
 -- used as a cashe of commonly searched for items (like the hanabi 
@@ -60,7 +71,6 @@ LAYOUT_CARD_HEIGHT = 3.5
 Temp_State={
     active_cards={}
 }
-
 
 function colorCharFromMask(color_mask)
     for char, mask in pairs(COLORS_MASK) do
@@ -81,11 +91,6 @@ function isObjectInZone(tts_zone)
 end
 
 function onObjectEnterZone(tts_zone, tts_object)
-    local playzone_guid = "4739d6"
-    local discardzone_guid = "438d80"
-    local snap_playzone_guid = "df2727"
-    local snap_discardzone_guid = "394402"
-
     -- Hanabi cards that enter a player's hand are revealed to all
     -- other players
     if tts_zone.type == "Hand" and isHanabiCard(tts_object) then
@@ -97,25 +102,23 @@ function onObjectEnterZone(tts_zone, tts_object)
     -- so it updates for that player
     if tts_zone.type == "Scripting" and tts_object.getName() == "turn_token" then
         local location = getTurnTokenLocation()
-        if location ~= "unknown" then
-            if location ~= "token_mat" then
-                broadcastToAll("Starting " .. location .. "'s turn")
-            end
-            ui_LoadUI()
+        if location ~= "token_mat" then
+            broadcastToAll("Starting " .. location .. "'s turn")
         end
+        ui_LoadUI()
     end
 
     -- Hanabi cards that are layed on the table once played or 
     -- discarded are revealed to all players
-    if  (tts_zone.guid == snap_discardzone_guid or
-        tts_zone.guid == snap_playzone_guid) and
+    if  (tts_zone.guid == TTS_GUID.layout_playzone or
+        tts_zone.guid == TTS_GUID.layout_discardzone) and
         isHanabiCard(tts_object)
     then
         tts_object.setHiddenFrom({})
     end
 
-    if  tts_zone.guid == discardzone_guid or
-        tts_zone.guid == playzone_guid
+    if  tts_zone.guid == TTS_GUID.play_mat or
+        tts_zone.guid == TTS_GUID.discard_mat
     then
         kleisliPipeOn(tts_object, {
             continueIf(isHanabiCard),
@@ -137,10 +140,10 @@ function onObjectEnterZone(tts_zone, tts_object)
             tapCallback(waitFrames(60)),
             smoothRelativeMove({0, 10, 0}),
             function(card)
-                if tts_zone.guid == discardzone_guid then
+                if tts_zone.guid == TTS_GUID.discard_mat then
                     recoverHintToken()()
                     return discardCard(card)
-                elseif tts_zone.guid == playzone_guid then
+                elseif tts_zone.guid == TTS_GUID.play_mat then
                     return playCard(card)
                 end
             end,
@@ -191,6 +194,14 @@ function onLoad()
     log("Hello World!")
     ui_LoadUI()
     hideCardsInHands()
+
+    -- Wait.time(
+    --     function()
+    --         logs(">>>>> getCurrentScore:", getCurrentScore())
+    --     end,
+    --     5,
+    --     100
+    -- )
 end
 
 --[[ The onUpdate event is called once per frame. --]]

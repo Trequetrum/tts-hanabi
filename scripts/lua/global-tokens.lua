@@ -1,54 +1,45 @@
 function getTurnTokenLocation()
 
-    local turn_token_position = getObjectByName("turn_token").getPosition()
+    local turn_token = getObjectByName("turn_token")
 
-    if  positionHoveringBounds(
-            turn_token_position,
-            getObjectByName("token_mat").getBounds()
-        )
-    then
+    if tokenMatContains(turn_token) then
         return "token_mat"
     end
 
-    for _,player_color in ipairs(Player.getAvailableColors()) do
-        local bounds = {
-            center=getHandZone(player_color).getPosition(),
-            size={x=14,y=0,z=14},
-            offset={x=0,y=0,z=0}
-        }
-        if positionHoveringBounds(turn_token_position, bounds) then
-            return player_color
+    local turn_token_position = turn_token.getPosition()
+
+    local closest = {distance=1000, player="token_mat"}
+
+    for _,player_color in ipairs(getActivePlayerColors()) do
+        local hand_pos = getHandZone(player_color).getPosition()
+        local delta_d = turn_token_position:distance(hand_pos)
+        if delta_d < closest.distance then
+            closest = {distance=delta_d, player=player_color}
         end
     end
 
-    return "unknown"
+    return closest.player
 end
 
-function getAllTokenMatObjects()
+function getTokenMatObjects()
+    return filterArray(
+        getObjectFromGUID(TTS_GUID.token_mat).getObjects(),
+        function(oby)
+            return 
+                oby.type ~= "Surface" and
+                oby.getName ~= "table_surface"
+        end
+    )
+end
 
-    local mat_b = getObjectByName("token_mat").getBounds()
-    
-    local hit_objects = Physics.cast({
-        origin={
-            mat_b.center.x,
-            mat_b.center.y,
-            mat_b.center.z - (mat_b.size.z / 2)
-        },
-        direction={0,0,1},
-        type=3,
-        size={mat_b.size.x,4,0},
-        max_distance=mat_b.size.z
-    })
-
-    local acc = {}
-    for _,hit in pairs(hit_objects) do
-        local tts_object = hit.hit_object
-        if tts_object.type ~= "Surface" then
-            table.insert(acc, tts_object)
+function tokenMatContains(tts_object)
+    for _,o in pairs(getTokenMatObjects()) do
+        if o.getGUID() == tts_object.getGUID() then
+            return true
         end
     end
-
-    return acc
+    
+    return false
 end
 
 function advanceTurnToken()
@@ -90,7 +81,17 @@ end
 
 function moveTurnTokenTo(color)
     local pos = getHandZone(color).getPosition()
-    pos.y = 4
+    local tbl_b = getObjectByName("table_surface").getBounds()
+    pos.y=1
+    if pos.x > tbl_b.center.x + (tbl_b.size.x/2) then
+        pos.x = pos.x - 6
+    elseif pos.x < tbl_b.center.x - (tbl_b.size.x/2) then
+        pos.x = pos.x + 6
+    elseif pos.z > tbl_b.center.z + (tbl_b.size.z/2) then
+        pos.z = pos.z - 6
+    elseif pos.z < tbl_b.center.z - (tbl_b.size.z/2) then
+        pos.z = pos.z + 6
+    end
     local token = getObjectByName("turn_token")
     smoothMove(pos)(token)()
 end
@@ -165,18 +166,22 @@ function getFuseTokens()
     return tokens
 end
 
-function resetFuseTokens()
-    local fuse_tokens = getFuseTokens()
+function fuseTokenLayoutPos(i)
+    local token_mat_pos = getObjectFromGUID(TTS_GUID.token_mat).getPosition()
 
-    local token_mat_bounds = getObjectByName("token_mat").getBounds()
-    
-    for i,fuse in ipairs(fuse_tokens) do
-        local pos = {
-            x=token_mat_bounds.center.x + (token_mat_bounds.size.x/2) - 2,
-            y=token_mat_bounds.center.y + 0.5,
-            z=token_mat_bounds.center.y - (token_mat_bounds.size.z/2) + (2 * (i-1))
-        }
-        smoothMove(pos)(fuse)()
+    return {
+        x=token_mat_pos.x + 4,
+        y=1,
+        z=token_mat_pos.z - 4 + (2 * (i-1))
+    }
+end
+
+function resetFuseTokens()
+    for i,fuse in ipairs(getFuseTokens()) do
+        kleisliPipeOn(fuse, {
+            smoothMove(fuseTokenLayoutPos(i)),
+            smoothRotation({x=0,y=180,z=0})
+        })()
     end
 end
 
@@ -185,12 +190,15 @@ function useFuseToken()
         function()
             local fuse_tokens = getFuseTokens()
             for _,fuse in ipairs(fuse_tokens) do
-                if fuse.resting and 
-                    positionHoveringBounds(
-                        fuse.getPosition(), 
-                        getObjectByName('token_mat').getBounds()
-                    )
-                then return fuse end
+                fuse_r = fuse.getRotation()
+                if  fuse.resting and 
+                    tokenMatContains(fuse) and
+                    fuse_r.x < 20 and
+                    fuse_r.y > 160 and
+                    fuse_r.z < 20
+                then
+                    return fuse
+                end
             end
         end, {
             continueIf(function(fuse) return fuse ~= nil end),
@@ -209,29 +217,19 @@ function useFuseToken()
             smoothMove({0,40,0}),
             function(fuse)
 
-                local mat_bounds = getObjectByName("discard_mat").getBounds()
-                local pos = {
-                    x=mat_bounds.center.x,
-                    y=1,
-                    z=mat_bounds.center.z + (mat_bounds.size.z/2) + 0.6
-                }
-
-                local taken = true
-                while taken do
-                    local hits = Physics.cast({
-                        origin={pos.x,5,pos.z},
-                        direction={0,-1,0},
-                        max_distance=10,
-                    })
-                    taken = false
-                    for _,hit in ipairs(hits) do
-                        if hit.hit_object.getName():sub(1, -2) == "fuse_token_" then
-                            taken = true
-                            pos.x = pos.x + 2
-                        end
-                    end
+                local fuse_num = tonumber(fuse.getName():sub(-1))
+                if not fuse_num then
+                    fuse_num = 1
                 end
-                return move(pos)(fuse)
+
+                local new_pos = fuseTokenLayoutPos(fuse_num)
+                new_pos.y = 1.5
+                
+                return kleisliPipeOn(fuse, {
+                    move(new_pos),
+                    tapCallback(waitFrames(45)),
+                    smoothRotation({x=90,y=90,z=0})
+                })
             end
         }
     )

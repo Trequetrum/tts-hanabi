@@ -92,34 +92,19 @@ function discardCard(card)
     return kleisliPipeOnLazy(
         function()
             local card_info = JSON.decode(card.memo)
+            local card_num = card_info.front_number
             local card_color_mask = card_info.front_color_mask
 
-            local move_coords = {
-                x=-5,
-                y=3,
-                z=layoutCardZByColor(card_color_mask)
-            }
-
-            for each_num, _ in ipairs(NUMBERS_REP) do
-
-                local layout_num = COLOR_LAYOUT.default
-                if COLOR_LAYOUT[each_num] ~= nil then
-                    layout_num = COLOR_LAYOUT[each_num]
-                end
-
-                if each_num > card_info.front_number then
-                    move_coords.x = move_coords.x - (LAYOUT_CARD_WIDTH * layout_num)
-                end
-                
-            end
-
+            local move_coords = layoutDiscardCard(card_num, card_color_mask)
+            move_coords.y = 3
+            
             while cardPlaced(
                 move_coords.x,
                 move_coords.z,
                 card_info.front_number,
                 card_info.front_color_mask
             ) do
-                move_coords.x = move_coords.x - LAYOUT_CARD_WIDTH
+                move_coords.x = move_coords.x + LAYOUT_CARD_WIDTH
             end
 
             return move_coords
@@ -143,14 +128,41 @@ function discardCard(card)
     )
 end
 
-function layoutCardZByColor(color_mask)
-    local top_row_z = LAYOUT_CARD_HEIGHT * 2.5
+function layoutPlayCard(card_num, color_mask)
     local color_index = colorMaskToIndex(color_mask)
-    return top_row_z - (LAYOUT_CARD_HEIGHT * color_index)
+    local left_column = -40.16 + LAYOUT_CARD_WIDTH * (#NUMBERS_REP*2+1)
+    local top_row_z = 13.54
+
+    return Vector({
+        x=left_column + color_index * LAYOUT_CARD_WIDTH,
+        y=1,
+        z=top_row_z - (LAYOUT_CARD_HEIGHT * (#NUMBERS_REP-card_num))
+    })
 end
 
-function layoutPlayCardXByNumber(num)
-    return 5.6 + (num - 1) * LAYOUT_CARD_WIDTH
+function layoutDiscardCard(card_num, color_mask)
+    local color_index = colorMaskToIndex(color_mask)
+    local left_column = -40.16
+    local top_row_z = 13.54
+
+    local x_offset = left_column
+    for each_num, _ in ipairs(NUMBERS_REP) do
+
+        local layout_num = COLOR_LAYOUT.default
+        if COLOR_LAYOUT[each_num] ~= nil then
+            layout_num = COLOR_LAYOUT[each_num]
+        end
+
+        if card_num > each_num then
+            x_offset = x_offset + LAYOUT_CARD_WIDTH * layout_num
+        end
+    end
+
+    return Vector({
+        x=x_offset,
+        y=1,
+        z=top_row_z - (LAYOUT_CARD_HEIGHT * color_index)
+    })
 end
 
 -- include_rainbow
@@ -167,10 +179,8 @@ function playCard(card)
             local num = info.front_number
             local color_mask = info.front_color_mask
 
-            local move_coords = {x=0,y=3,z=0}
-
-            move_coords.z = layoutCardZByColor(color_mask)
-            move_coords.x = layoutPlayCardXByNumber(num)
+            local move_coords = layoutPlayCard(num, color_mask)
+            move_coords.y = 3
 
             if  color_mask ~= COLORS_MASK.a or
                 (not getCurrentGameRules().rainbow_wild and
@@ -197,8 +207,8 @@ function playCard(card)
                 cardPlaced(move_coords.x,move_coords.z) or
                 ( num ~= 1 and 
                 not cardPlaced(
-                    move_coords.x - LAYOUT_CARD_WIDTH,
-                    move_coords.z
+                    move_coords.x,
+                    move_coords.z - LAYOUT_CARD_HEIGHT
                 ))
             then
                 return kleisliPipeOn(card, {
@@ -256,22 +266,19 @@ function askAfterRainbowPlayLocation(card)
     if #viable_masks < 1 then
         return liftValuesToCallback(Vector(-1,-1,-1), card)
     elseif #viable_masks == 1 then
-        return liftValuesToCallback({
-            x = layoutPlayCardXByNumber(card_num),
-            y = 3,
-            z = layoutCardZByColor(viable_masks[1])
-        }, card)
+        local pos = layoutPlayCard(card_num, viable_masks[1])
+        pos.y = 3
+        return liftValuesToCallback(pos, card)
     else
         return function(callback)
             Temp_State.askAfterRainbowPlayLocation = {
                 callback=function(card_num, card_color_mask)
                     Temp_State.askAfterRainbowPlayLocation = nil
                     ui_LoadUI()
-                    callback({
-                        x = layoutPlayCardXByNumber(card_num),
-                        y = 3,
-                        z = layoutCardZByColor(card_color_mask)
-                    }, card)
+
+                    local pos = layoutPlayCard(card_num, card_color_mask)
+                    pos.y = 3
+                    callback(pos, card)
                 end,
                 card_num=card_num,
                 color_masks=viable_masks
@@ -292,14 +299,16 @@ function cardFireworkStatus()
             count = 0,
             rainbow = false
         }
-        local check_z = layoutCardZByColor(color_mask)
+        local check_pos = layoutPlayCard(1, color_mask)
+        check_pos.y = 2
 
         local found_objects = Physics.cast({
             type = 3, -- Box
-            direction = {1, 0, 0},
-            max_distance = (#NUMBERS_REP - 1) * LAYOUT_CARD_WIDTH,
-            origin = { 5.6, 1, check_z },
-            size= { 0, 5, 0 }
+            direction = {0, 0, 1},
+            max_distance = (#NUMBERS_REP - 1) * LAYOUT_CARD_HEIGHT,
+            origin = check_pos,
+            size= { 0, 4, 0 },
+            debug=true
         })
 
         for _,found in pairs(found_objects) do
@@ -373,7 +382,7 @@ function getHanabiDeck(verbose)
         return nil
     end
 
-    local deck = getDeckInList(getAllTokenMatObjects())
+    local deck = getDeckInList(getTokenMatObjects())
     if deck ~= nil then
         Temp_State.deck = deck
         return deck 

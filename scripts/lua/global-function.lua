@@ -12,7 +12,7 @@ end
 function colorMaskToIndex(color_mask)
 
     for i, color in ipairs(COLOR_ORDER) do
-        if bit32.bor(COLORS_MASK[color], color_mask) == COLORS_MASK[color] then
+        if COLORS_MASK[color] == color_mask then
             return i
         end
     end
@@ -38,7 +38,7 @@ function getObjectByName(name)
         end
     end
 
-    printToAll("ALERT! Cannot find with name: " .. name)
+    printToAll("ALERT! Cannot find object with name: " .. name)
 
     return nil
 end
@@ -158,14 +158,15 @@ function getCurrentScore()
 
     for _,color_mask in pairs(COLORS_MASK) do
 
-        local check_z = layoutCardZByColor(color_mask)
+        local check_pos = layoutPlayCard(1, color_mask)
 
         local found_objects = Physics.cast({
             type = 3, -- Box
-            direction = {1, 0, 0},
-            max_distance = (#NUMBERS_REP - 1) * LAYOUT_CARD_WIDTH,
-            origin = { 5.6, 1, check_z },
-            size= { 0, 5, 0 }
+            direction = {0, 0, 1},
+            max_distance = (#NUMBERS_REP - 1) * LAYOUT_CARD_HEIGHT,
+            origin = check_pos,
+            size= { 0, 5, 0 },
+            debug = true
         })
 
         local color_score = 0
@@ -264,15 +265,17 @@ function startDeal()
             resetHintTokens()
             resetFuseTokens()
             resetCards()
-            return getCurrentGameRules().include_rainbow
+            local game_rules = getCurrentGameRules()
+            return game_rules.include_rainbow
         end,{
             spawnHanabiDeck,
+            scale({x=1.65,y=1,z=1.65}),
             function(deck)
-                local token_mat_pos = getObjectByName("token_mat").getPosition()
+                local token_mat_pos = getObjectFromGUID(TTS_GUID.token_mat).getPosition()
                 local deckPos = {
-                    x=token_mat_pos.x + 2,
-                    y=2,
-                    z=token_mat_pos.z + 2
+                    x=token_mat_pos.x - 3,
+                    y=1.3,
+                    z=token_mat_pos.z - 2
                 }
                 return parallelCallback({
                     smoothMove(deckPos)(deck),
@@ -311,7 +314,7 @@ function startDeal()
 end
 
 function getCurrentGameRules()
-    local game_rules = JSON.decode(getObjectByName("token_mat").memo or "")
+    local game_rules = JSON.decode(getObjectByName("table_surface").memo or "")
     if game_rules == nil then
         game_rules = {
             include_rainbow = false,
@@ -322,7 +325,7 @@ function getCurrentGameRules()
             rainbow_talking = false
         }
 
-        getObjectByName("token_mat").memo = JSON.encode(game_rules)
+        getObjectByName("table_surface").memo = JSON.encode(game_rules)
     end
 
     return game_rules
@@ -336,6 +339,23 @@ function setGameRule(rule, value)
 
     local game_rules = getCurrentGameRules()
     game_rules[rule] = is_on
-    getObjectByName("token_mat").memo = JSON.encode(game_rules)
+    getObjectByName("table_surface").memo = JSON.encode(game_rules)
     return game_rules
+end
+
+function getActivePlayerColors()
+    local colors = Player.getAvailableColors()
+
+    local active_colors = mapArray(
+        Player.getPlayers(),
+        function(p) return p.color end
+    )
+
+    for _,color in pairs(colors) do
+        if #getCardsInHandZone(color) > 0 then
+            table.insert(active_colors, color)
+        end
+    end
+
+    return noDuplicatesArray(active_colors)
 end
