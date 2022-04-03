@@ -120,7 +120,7 @@ function discardCard(card)
                     card_info.front_number,
                     card_info.front_color_mask
                 ) do
-                    move_coords.x = move_coords.x - LAYOUT_CARD_WIDTH
+                    move_coords.x = move_coords.x + LAYOUT_CARD_WIDTH
                 end
                 return smoothMove(move_coords)(card)
             end
@@ -165,12 +165,7 @@ function layoutDiscardCard(card_num, color_mask)
     })
 end
 
--- include_rainbow
--- rainbow_wild
--- rainbow_one_per_firework
--- rainbow_firework
--- rainbow_multicolor
--- rainbow_talking
+
 function playCard(card)
     return kleisliPipeOn(card, {
         tapFunction(function(t) t.setLock(true) end),
@@ -179,15 +174,19 @@ function playCard(card)
             local num = info.front_number
             local color_mask = info.front_color_mask
 
+            logs(">>>>> playCard(num, color_mask)", num, color_mask)
+
             local move_coords = layoutPlayCard(num, color_mask)
             move_coords.y = 3
 
             if  color_mask ~= COLORS_MASK.a or
-                (not getCurrentGameRules().rainbow_wild and
-                getCurrentGameRules().rainbow_firework)
+                (   getCurrentGameRules().rainbow_firework and
+                    not getCurrentGameRules().rainbow_wild
+                )
             then
                 return liftValuesToCallback(move_coords, card)
             else
+                logs(">>>>> askAfterRainbowPlayLocation")
                 return askAfterRainbowPlayLocation(card)
             end
         end,
@@ -218,7 +217,12 @@ function playCard(card)
             end
             return kleisliPipeOn(card, {
                 smoothRotation({0,180,0}),
-                waitUntilResting
+                waitUntilResting,
+                tapBind(function()
+                    logs(">>>>> During Play, ", num)
+                    if num == 5 then return recoverHintToken() end
+                    return liftValuesToCallback(1)
+                end)
             })
         end
     })
@@ -270,13 +274,17 @@ function askAfterRainbowPlayLocation(card)
         pos.y = 3
         return liftValuesToCallback(pos, card)
     else
+        logs(">>>>> askAfterRainbowPlayLocation viable_masks:", viable_masks)
         return function(callback)
+            logs(">>>>> askAfterRainbowPlayLocation viable_masks:", viable_masks)
             Temp_State.askAfterRainbowPlayLocation = {
                 callback=function(card_num, card_color_mask)
                     Temp_State.askAfterRainbowPlayLocation = nil
                     ui_LoadUI()
 
                     local pos = layoutPlayCard(card_num, card_color_mask)
+
+                    logs(">>>>> askAfterRainbowPlayLocation(card_num, card_color_mask), pos:", card_num, card_color_mask, pos)
                     pos.y = 3
                     callback(pos, card)
                 end,

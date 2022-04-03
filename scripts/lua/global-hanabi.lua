@@ -2,6 +2,12 @@
 ---------------- [[ Global Hanabi Script ]] -------------------------
 ---------------------------------------------------------------------
 
+--[[
+    Playing rainbow 1 as green/yellow played it as rainbow
+    Implement rule when colors arn't wild for rainbow
+    make talking selection more reactive
+]]
+
 -- Pictures are stored/hosted by this project's github repo
 -- They can be uploaded to steam cloud eventually (Though both are
 -- stable/fast hosts).
@@ -101,11 +107,22 @@ function onObjectEnterZone(tts_zone, tts_object)
     -- If the turn token enters a players hand zone, reload the UI
     -- so it updates for that player
     if tts_zone.type == "Scripting" and tts_object.getName() == "turn_token" then
-        local location = getTurnTokenLocation()
-        if location ~= "token_mat" then
-            broadcastToAll("Starting " .. location .. "'s turn")
-        end
-        ui_LoadUI()
+        kleisliPipeOn(tts_object, {
+            continueIf(function(card)
+                local continue = Temp_State.tracking_turn_token ~= true
+                Temp_State.tracking_turn_token = true
+                return continue
+            end),
+            waitUntilResting,
+            tapFunction(function()
+                local location = getTurnTokenLocation()
+                if location ~= "token_mat" then
+                    broadcastToAll("Starting " .. location .. "'s turn")
+                end
+                ui_LoadUI()
+                Temp_State.tracking_turn_token = false
+            end)
+        })()
     end
 
     -- Hanabi cards that are layed on the table once played or 
@@ -163,13 +180,22 @@ function onObjectEnterZone(tts_zone, tts_object)
                 for _,maybe_card in pairs(deck.getObjects()) do
                     if isHanabiCard(maybe_card) then
                         table.insert(
-                            sequence, 
+                            sequence,
                             kleisliPipeOn(deck, {
                                 -- This is a short leak, I don't expect this code
                                 -- to run very often or for very long, so who cares?
                                 continueIf(isObjectInZone(tts_zone)),
                                 spawnFromContainer(maybe_card.guid),
-                                tapCallback(waitFrames(200)),
+                                smoothRelativeMove({0,2,0}),
+                                tapFunction(function(card)
+                                    if tts_zone.guid == TTS_GUID.discard_mat then
+                                        discardCard(card)()
+                                    elseif tts_zone.guid == TTS_GUID.play_mat then
+                                        playCard(card)()
+                                    else
+                                        smoothMove({0,10,0})(card)()
+                                    end
+                                end)
                             })
                         )
                     end
@@ -189,11 +215,32 @@ function onObjectSpawn(tts_object)
     end
 end
 
+function settupGameKeys()
+    addHotkey("Play Card", function(player_color, tts_object)
+        if isHanabiCard(tts_object) then
+            local pos = getPositionInfrontOf(player_color)
+            kleisliPipeOn(tts_object, {
+                move(pos),
+                smoothMove(getObjectFromGUID(TTS_GUID.play_mat).getPosition())
+            })()
+        end
+    end)
+    addHotkey("Discard Card", function(player_color, tts_object)
+        if isHanabiCard(tts_object) then
+            local pos = getPositionInfrontOf(player_color)
+            kleisliPipeOn(tts_object, {
+                move(pos),
+                smoothMove(getObjectFromGUID(TTS_GUID.discard_mat).getPosition())
+            })()
+        end
+    end)
+end
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
     log("Hello World!")
     ui_LoadUI()
-    hideCardsInHands()
+    -- hideCardsInHands()
+    -- settupGameKeys()
 
     -- Wait.time(
     --     function()

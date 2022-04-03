@@ -15,7 +15,7 @@ function ui_defaults()
             height="50%",
             width="95%"
         },
-        children={}
+        children=ui_alignmentHelpers()
     }}
 end
 
@@ -511,9 +511,14 @@ end
 function ui_askAfterRainbowPlayLocation(info)
 
     local vis = getTurnTokenLocation()
+
+    logs(">>>>> ui_askAfterRainbowPlayLocation vis", vis)
+
     if vis == "token_mat" then
         vis = table.concat(Player.getAvailableColors(), "|")
     end
+
+    logs(">>>>> ui_askAfterRainbowPlayLocation vis 2", vis)
 
     local panel = {
         tag="Panel",
@@ -524,7 +529,7 @@ function ui_askAfterRainbowPlayLocation(info)
             height=400,
             width=125 * #info.color_masks
         },
-        children={}
+        children=ui_alignmentHelpers()
     }
 
     local x_offset = 0
@@ -554,7 +559,9 @@ function ui_askAfterRainbowPlayLocation(info)
     return panel
 end
 
-function ui_onSelectCardPlayLocation(player, call_str)
+function ui_onSelectCardPlayLocation(_, call_str)
+
+    logs(">>>>> ui_onSelectCardPlayLocation(str)", call_str)
 
     local tokens = {}
     for token in string.gmatch(call_str, "[^%s]+") do
@@ -573,7 +580,7 @@ function ui_onSelectCardPlayLocation(player, call_str)
     info.callback(num, color_mask)
 end
 
-function ui_LoadUI()
+function ui_loadAssetBundle()
 
     if not Temp_State.isLoadedUiAssetBundle then
         Temp_State.isLoadedUiAssetBundle = true
@@ -600,50 +607,123 @@ function ui_LoadUI()
             end
         end
 
+        for _,color_mask in pairs(COLORS_MASK) do
+            table.insert(assets, {
+                name="card_back_no_number_" .. color_mask,
+                url=generated_back_url(0, color_mask)
+            })
+            for num,_ in ipairs(NUMBERS_REP) do
+                table.insert(assets, {
+                    name="card_back_" .. num .. "_" .. color_mask,
+                    url=generated_back_url(num, color_mask)
+                })
+            end
+        end
+        for num,_ in ipairs(NUMBERS_REP) do
+            table.insert(assets, {
+                name="card_back_" .. num .. "_no_mask",
+                url=generated_back_url(num, 0)
+            })
+        end
+
+        table.insert(assets, {
+            name="table_img_1",
+            getTableImage(false)
+        })
+        table.insert(assets, {
+            name="table_img_2",
+            getTableImage(true, false)
+        })
+        table.insert(assets, {
+            name="table_img_3",
+            getTableImage(true, true)
+        })
+
+        logs(">>>>> Loading Asset Bundle: ")
+
         UI.setCustomAssets(assets)
     end
 
-    local game_rules = getCurrentGameRules()
-    setTableImage(game_rules.include_rainbow, game_rules.rainbow_firework)
+end
 
-    local globalLoayout = ui_defaults()
-    local parent_table = globalLoayout[2].children
+function ui_LoadUI()
 
-    local all_colors = Player.getAvailableColors()
-    local turn_token_location = getTurnTokenLocation()
+    -- ui_loadAssetBundle()
 
-    if turn_token_location == "token_mat" then
-        for _,player_color in ipairs(all_colors) do
-            table.insert(parent_table, ui_greeting(player_color))
-        end
+    -- local game_rules = getCurrentGameRules()
+    -- setTableImage(game_rules.include_rainbow, game_rules.rainbow_firework)
 
-        table.insert(parent_table, ui_gameRuleDialog())
-    else
-        local wait_colors = {}
-        for _,player_color in ipairs(all_colors) do
-            if player_color ~= turn_token_location then
-                wait_colors = table.insert(wait_colors, player_color)
-            end
-        end
-        wait_colors_str = table.concat(wait_colors, "|")
-        table.insert(parent_table, ui_pleaseWait(wait_colors_str, turn_token_location))
+    -- local global_layout = ui_defaults()
+    -- local parent_table = global_layout[2].children
 
-        if turn_token_location ~= "unknown" then
-            table.insert(parent_table, ui_activeTurnUi(turn_token_location))
-        end
+    -- local all_colors = Player.getAvailableColors()
+    -- local turn_token_location = getTurnTokenLocation()
 
-    end
+    -- if turn_token_location == "token_mat" then
+    --     logs(">>>>> ui_LoadUI turn_token_location == token_mat")
+    --     for _,player_color in ipairs(all_colors) do
+    --         table.insert(parent_table, ui_greeting(player_color))
+    --     end
 
-    if Temp_State.askAfterRainbowPlayLocation ~= nil then
-        table.insert(
-            parent_table,
-            ui_askAfterRainbowPlayLocation(
-                Temp_State.askAfterRainbowPlayLocation
-            )
-        )
-    end
+    --     table.insert(parent_table, ui_gameRuleDialog())
+    -- else
+    --     logs(">>>>> ui_LoadUI turn_token_location ~= token_mat")
+    --     local wait_colors = {}
+    --     for _,player_color in ipairs(all_colors) do
+    --         if player_color ~= turn_token_location then
+    --             wait_colors = table.insert(wait_colors, player_color)
+    --         end
+    --     end
+    --     wait_colors_str = table.concat(wait_colors, "|")
+    --     table.insert(parent_table, ui_pleaseWait(wait_colors_str, turn_token_location))
 
-    UI.setXmlTable(globalLoayout)
+    --     if turn_token_location ~= "unknown" then
+    --         table.insert(parent_table, ui_activeTurnUi(turn_token_location))
+    --     end
+
+    -- end
+
+    -- if Temp_State.askAfterRainbowPlayLocation ~= nil then
+    --     logs(">>>>> Temp_State.askAfterRainbowPlayLocation", Temp_State.askAfterRainbowPlayLocation)
+    --     table.insert(
+    --         parent_table,
+    --         ui_askAfterRainbowPlayLocation(
+    --             Temp_State.askAfterRainbowPlayLocation
+    --         )
+    --     )
+    -- end
+    
+    -- table.insert(
+    --     parent_table,
+    --     {
+    --         tag="Panel",
+    --         attributes={
+    --             width=200,
+    --             height=200
+    --         },
+    --         children=ui_alignmentHelpers()
+    --     }
+    -- )
+
+
+    -- local basic = {{
+    --     tag="Text",
+    --     value="Hello",
+    --     attributes={
+    --         fontSize=300
+    --     }
+    -- }}
+    -- logs(">>>>> global_layout:", basic)
+
+    -- Global.UI.setXmlTable(basic)
+
+    -- --UI.setXmlTable(global_layout)
+
+    -- Wait.frames(function()
+
+    --     logs(">>>>> global_layout 2:", UI.getXmlTable())
+    
+    -- end, 120)
 
 end
 
@@ -652,10 +732,7 @@ function getHanabiSwatchUrl(name)
     return ASSET_URL .. "back_" .. name .. "_" .. ASSET_VERSION .. ".png"
 end
 
-function setTableImage(has_rainbow, has_rainbow_firework)
-    local table_surface = getObjectByName("table_surface")
-    local current_table = table_surface.getCustomObject()
-
+function getTableImage(has_rainbow, has_rainbow_firework)
     local image_prefix = ASSET_URL .. "hanabi_layout_game_mat_img"
     local image_postfix = "_" .. ASSET_VERSION .. ".png"
     local updated_img = ""
@@ -666,6 +743,15 @@ function setTableImage(has_rainbow, has_rainbow_firework)
     else
         updated_img = image_prefix .. "_w" .. image_postfix
     end
+
+    return updated_img
+end
+
+function setTableImage(has_rainbow, has_rainbow_firework)
+    local table_surface = getObjectByName("table_surface")
+    local current_table = table_surface.getCustomObject()
+
+    local updated_img = getTableImage(has_rainbow, has_rainbow_firework)
 
     if current_table.image ~= updated_img then
         current_table.image = updated_img

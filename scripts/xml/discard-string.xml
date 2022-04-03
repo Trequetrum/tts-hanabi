@@ -22,7 +22,7 @@
 
 <Panel
     id="play_zone_board"
-    position="0 0 -60"
+    position="0 0 -100"
     visibility="Orange|Yellow"
 >
     <Text rotation="0 0 270">
@@ -32,8 +32,8 @@
 
 <Panel
     id="play_zone_board"
-    position="0 0 -60"
-    visibility="Green|TealBlue"
+    position="0 0 -100"
+    visibility="Green|Teal|Blue"
 >
     <Text rotation="0 0 180">
         <b>DISCARD</b>
@@ -42,7 +42,7 @@
 
 <Panel
     id="play_zone_board"
-    position="0 0 -60"
+    position="0 0 -100"
     visibility="Purple|Pink"
 >
     <Text rotation="0 0 90">

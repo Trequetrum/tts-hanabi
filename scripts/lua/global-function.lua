@@ -356,5 +356,26 @@ function getActivePlayerColors()
         end
     end
 
-    return noDuplicatesArray(active_colors)
+    return filterArray(
+        noDuplicatesArray(active_colors),
+        function(c) return c ~= "Grey" end
+    )
+end
+
+function getPositionInfrontOf(color)
+    local pos = getHandZone(color).getPosition()
+    pos.y=1
+    local tbl_b = getObjectByName("table_surface").getBounds()
+    
+    local offset = 6.5
+    if pos.x > tbl_b.center.x + (tbl_b.size.x/2) then
+        pos.x = pos.x - offset
+    elseif pos.x < tbl_b.center.x - (tbl_b.size.x/2) then
+        pos.x = pos.x + offset
+    elseif pos.z > tbl_b.center.z + (tbl_b.size.z/2) then
+        pos.z = pos.z - offset
+    elseif pos.z < tbl_b.center.z - (tbl_b.size.z/2) then
+        pos.z = pos.z + offset
+    end
+    return pos
 end

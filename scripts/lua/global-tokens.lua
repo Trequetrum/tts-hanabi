@@ -80,18 +80,7 @@ function advanceTurnToken()
 end
 
 function moveTurnTokenTo(color)
-    local pos = getHandZone(color).getPosition()
-    local tbl_b = getObjectByName("table_surface").getBounds()
-    pos.y=1
-    if pos.x > tbl_b.center.x + (tbl_b.size.x/2) then
-        pos.x = pos.x - 6
-    elseif pos.x < tbl_b.center.x - (tbl_b.size.x/2) then
-        pos.x = pos.x + 6
-    elseif pos.z > tbl_b.center.z + (tbl_b.size.z/2) then
-        pos.z = pos.z - 6
-    elseif pos.z < tbl_b.center.z - (tbl_b.size.z/2) then
-        pos.z = pos.z + 6
-    end
+    local pos = getPositionInfrontOf(color)
     local token = getObjectByName("turn_token")
     smoothMove(pos)(token)()
 end
@@ -140,8 +129,10 @@ function useHintToken()
 end
 
 function recoverHintToken()
+    logs(">>>>> recoverHintToken()")
     return kleisliPipeOnLazy(usedHintTokens, {
         function(ts)
+            logs(">>>>> recoverHintToken() ts", ts)
             if #ts > 0 then
                 return flipObject(ts[1])
             else
