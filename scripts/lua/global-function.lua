@@ -313,7 +313,7 @@ function startDeal()
 end
 
 function getCurrentGameRules()
-    local game_rules = JSON.decode(getObjectByName("table_surface").memo or "")
+    local game_rules = JSON.decode(Tables.getTableObject().memo or "")
     if game_rules == nil then
         game_rules = {
             include_rainbow = false,
@@ -324,7 +324,7 @@ function getCurrentGameRules()
             rainbow_talking = false
         }
 
-        getObjectByName("table_surface").memo = JSON.encode(game_rules)
+        Tables.getTableObject().memo = JSON.encode(game_rules)
     end
 
     return game_rules
@@ -338,7 +338,7 @@ function setGameRule(rule, value)
 
     local game_rules = getCurrentGameRules()
     game_rules[rule] = is_on
-    getObjectByName("table_surface").memo = JSON.encode(game_rules)
+    Tables.getTableObject().memo = JSON.encode(game_rules)
     return game_rules
 end
 

@@ -13,7 +13,7 @@
 <Panel
     id="play_zone_board"
     position="0 0 -100"
-    visibility="White|Brown|Red|Grey|Black"
+    visibility="Yellow|Red|Grey|Black"
 >
     <Text rotation="0 0 0">
         <b>PLAY</b>
@@ -23,17 +23,7 @@
 <Panel
     id="play_zone_board"
     position="0 0 -100"
-    visibility="Orange|Yellow"
->
-    <Text rotation="0 0 270">
-        <b>PLAY</b>
-    </Text>
-</Panel>
-
-<Panel
-    id="play_zone_board"
-    position="0 0 -100"
-    visibility="Green|Teal|Blue"
+    visibility="Green|Blue"
 >
     <Text rotation="0 0 180">
         <b>PLAY</b>
@@ -43,7 +33,7 @@
 <Panel
     id="play_zone_board"
     position="0 0 -100"
-    visibility="Purple|Pink"
+    visibility="Purple"
 >
     <Text rotation="0 0 90">
         <b>PLAY</b>

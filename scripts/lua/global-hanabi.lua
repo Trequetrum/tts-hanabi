@@ -64,11 +64,11 @@ LAYOUT_CARD_HEIGHT = 5.58
 -- (They're so fickle!). Scripting zones arn't external resources,
 -- they're always made within TTS. GUID is as good as a name then.
 TTS_GUID = {
-    token_mat = "5f9086",
-    play_mat = "4739d6",
-    discard_mat = "438d80",
-    layout_playzone = "394402",
-    layout_discardzone = "df2727"
+    token_mat = "d60259",
+    play_mat = "ee75ab",
+    discard_mat = "169cee",
+    layout_playzone = "f311cf",
+    layout_discardzone = "707002"
 }
 
 -- Store info that is fine to get lost when the game is reset. Mostly

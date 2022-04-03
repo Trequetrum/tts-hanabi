@@ -24,11 +24,7 @@ end
 function getTokenMatObjects()
     return filterArray(
         getObjectFromGUID(TTS_GUID.token_mat).getObjects(),
-        function(oby)
-            return 
-                oby.type ~= "Surface" and
-                oby.getName ~= "table_surface"
-        end
+        function(oby) return oby.type ~= "Surface" end
     )
 end
 
