@@ -125,10 +125,8 @@ function useHintToken()
 end
 
 function recoverHintToken()
-    logs(">>>>> recoverHintToken()")
     return kleisliPipeOnLazy(usedHintTokens, {
         function(ts)
-            logs(">>>>> recoverHintToken() ts", ts)
             if #ts > 0 then
                 return flipObject(ts[1])
             else

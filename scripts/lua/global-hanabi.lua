@@ -57,7 +57,7 @@ COLOR_LAYOUT = {
     [5]=1
 }
 
-LAYOUT_CARD_WIDTH = 4
+LAYOUT_CARD_WIDTH = 3.99
 LAYOUT_CARD_HEIGHT = 5.58
 
 -- While I generally prefer to find things without relying on GUID
@@ -88,7 +88,10 @@ end
 function isObjectInZone(tts_zone)
     return function(tts_object)
         for _,check in pairs(tts_zone.getObjects()) do
-            if check.getGUID() == tts_object.getGUID() then
+            if  not check.isDestroyed() and 
+                not tts_object.isDestroyed() and
+                check.getGUID() == tts_object.getGUID()
+            then
                 return true
             end
         end
@@ -137,38 +140,38 @@ function onObjectEnterZone(tts_zone, tts_object)
     if  tts_zone.guid == TTS_GUID.play_mat or
         tts_zone.guid == TTS_GUID.discard_mat
     then
-        kleisliPipeOn(tts_object, {
-            continueIf(isHanabiCard),
-            continueIf(function(card)
-                local continue = Temp_State.active_cards[card.getGUID()] ~= true
-                Temp_State.active_cards[card.getGUID()] = true
-                return continue
-            end),
-            waitUntilResting,
-            continueIf(function(card)
-                local continue = isObjectInZone(tts_zone)(card)
-                if not continue then
-                    Temp_State.active_cards[card.getGUID()] = false
-                end
-                return continue
-            end),
-            tapFunction(function(card) card.setHiddenFrom({}) end),
-            flipFaceUp,
-            tapCallback(waitFrames(60)),
-            smoothRelativeMove({0, 10, 0}),
-            function(card)
-                if tts_zone.guid == TTS_GUID.discard_mat then
-                    recoverHintToken()()
-                    return discardCard(card)
-                elseif tts_zone.guid == TTS_GUID.play_mat then
-                    return playCard(card)
-                end
-            end,
-            tapFunction(function(card)
-                Temp_State.active_cards[card.getGUID()] = false
-            end),
-            tapFunction(advanceTurnToken)
-        })()
+        -- kleisliPipeOn(tts_object, {
+        --     continueIf(isHanabiCard),
+        --     continueIf(function(card)
+        --         local continue = Temp_State.active_cards[card.getGUID()] ~= true
+        --         Temp_State.active_cards[card.getGUID()] = true
+        --         return continue
+        --     end),
+        --     waitUntilResting,
+        --     continueIf(function(card)
+        --         local continue = isObjectInZone(tts_zone)(card)
+        --         if not continue then
+        --             Temp_State.active_cards[card.getGUID()] = false
+        --         end
+        --         return continue
+        --     end),
+        --     tapFunction(function(card) card.setHiddenFrom({}) end),
+        --     flipFaceUp,
+        --     tapCallback(waitFrames(10)),
+        --     smoothRelativeMove({0, 5, 0}),
+        --     function(card)
+        --         if tts_zone.guid == TTS_GUID.discard_mat then
+        --             recoverHintToken()()
+        --             return discardCard(card)
+        --         elseif tts_zone.guid == TTS_GUID.play_mat then
+        --             return playCard(card)
+        --         end
+        --     end,
+        --     tapFunction(function(card)
+        --         Temp_State.active_cards[card.getGUID()] = false
+        --     end),
+        --     tapFunction(advanceTurnToken)
+        -- })()
 
         kleisliPipeOn(tts_object, {
             continueIf(function(oby) return oby.getQuantity() > 0 end),
@@ -186,11 +189,11 @@ function onObjectEnterZone(tts_zone, tts_object)
                                 -- to run very often or for very long, so who cares?
                                 continueIf(isObjectInZone(tts_zone)),
                                 spawnFromContainer(maybe_card.guid),
-                                smoothRelativeMove({0,2,0}),
+                                smoothRelativeMove({0,10,0}),
                                 tapFunction(function(card)
-                                    if tts_zone.guid == TTS_GUID.discard_mat then
+                                    if tts_zone.getGUID() == TTS_GUID.discard_mat then
                                         discardCard(card)()
-                                    elseif tts_zone.guid == TTS_GUID.play_mat then
+                                    elseif tts_zone.getGUID() == TTS_GUID.play_mat then
                                         playCard(card)()
                                     else
                                         smoothMove({0,10,0})(card)()
@@ -203,7 +206,9 @@ function onObjectEnterZone(tts_zone, tts_object)
 
                 return seriesCallback(sequence)
             end
-        })()
+        })(function(...)
+            logs(">>>>> end:", {...})
+        end)
 
     end
 
@@ -216,31 +221,31 @@ function onObjectSpawn(tts_object)
 end
 
 function settupGameKeys()
-    addHotkey("Play Card", function(player_color, tts_object)
-        if isHanabiCard(tts_object) then
-            local pos = getPositionInfrontOf(player_color)
-            kleisliPipeOn(tts_object, {
-                move(pos),
-                smoothMove(getObjectFromGUID(TTS_GUID.play_mat).getPosition())
-            })()
+
+    local function moveHotkey(destination)
+        return function(player_color, tts_object)
+            if isHanabiCard(tts_object) then
+                local hand_pos = getPositionInfrontOf(player_color)
+                destination.y = 1
+                kleisliPipeOn(tts_object, {
+                    move(hand_pos),
+                    smoothMove(destination)
+                })()
+            end
         end
-    end)
-    addHotkey("Discard Card", function(player_color, tts_object)
-        if isHanabiCard(tts_object) then
-            local pos = getPositionInfrontOf(player_color)
-            kleisliPipeOn(tts_object, {
-                move(pos),
-                smoothMove(getObjectFromGUID(TTS_GUID.discard_mat).getPosition())
-            })()
-        end
-    end)
+    end
+
+    addHotkey("Play Card", moveHotkey(getObjectFromGUID(TTS_GUID.play_mat).getPosition()))
+    addHotkey("Discard Card", moveHotkey(getObjectFromGUID(TTS_GUID.discard_mat).getPosition()))
+
 end
+
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
     log("Hello World!")
     ui_LoadUI()
-    -- hideCardsInHands()
-    -- settupGameKeys()
+    hideCardsInHands()
+    settupGameKeys()
 
     -- Wait.time(
     --     function()

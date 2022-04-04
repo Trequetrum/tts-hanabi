@@ -129,21 +129,24 @@ function discardCard(card)
 end
 
 function layoutPlayCard(card_num, color_mask)
+    
     local color_index = colorMaskToIndex(color_mask)
-    local left_column = -40.16 + LAYOUT_CARD_WIDTH * (#NUMBERS_REP*2+1)
-    local top_row_z = 13.54
+    local left_column = -39.88 + LAYOUT_CARD_WIDTH * (#NUMBERS_REP*2+1)
+    local top_row_z = 13.94
 
-    return Vector({
+    local ret_pos = Vector({
         x=left_column + color_index * LAYOUT_CARD_WIDTH,
         y=1,
         z=top_row_z - (LAYOUT_CARD_HEIGHT * (#NUMBERS_REP-card_num))
     })
+
+    return ret_pos
 end
 
 function layoutDiscardCard(card_num, color_mask)
     local color_index = colorMaskToIndex(color_mask)
-    local left_column = -40.16
-    local top_row_z = 13.54
+    local left_column = -39.88
+    local top_row_z = 13.94
 
     local x_offset = left_column
     for each_num, _ in ipairs(NUMBERS_REP) do
@@ -174,8 +177,6 @@ function playCard(card)
             local num = info.front_number
             local color_mask = info.front_color_mask
 
-            logs(">>>>> playCard(num, color_mask)", num, color_mask)
-
             local move_coords = layoutPlayCard(num, color_mask)
             move_coords.y = 3
 
@@ -186,7 +187,6 @@ function playCard(card)
             then
                 return liftValuesToCallback(move_coords, card)
             else
-                logs(">>>>> askAfterRainbowPlayLocation")
                 return askAfterRainbowPlayLocation(card)
             end
         end,
@@ -219,7 +219,6 @@ function playCard(card)
                 smoothRotation({0,180,0}),
                 waitUntilResting,
                 tapBind(function()
-                    logs(">>>>> During Play, ", num)
                     if num == 5 then return recoverHintToken() end
                     return liftValuesToCallback(1)
                 end)
@@ -274,17 +273,13 @@ function askAfterRainbowPlayLocation(card)
         pos.y = 3
         return liftValuesToCallback(pos, card)
     else
-        logs(">>>>> askAfterRainbowPlayLocation viable_masks:", viable_masks)
         return function(callback)
-            logs(">>>>> askAfterRainbowPlayLocation viable_masks:", viable_masks)
             Temp_State.askAfterRainbowPlayLocation = {
                 callback=function(card_num, card_color_mask)
                     Temp_State.askAfterRainbowPlayLocation = nil
                     ui_LoadUI()
 
                     local pos = layoutPlayCard(card_num, card_color_mask)
-
-                    logs(">>>>> askAfterRainbowPlayLocation(card_num, card_color_mask), pos:", card_num, card_color_mask, pos)
                     pos.y = 3
                     callback(pos, card)
                 end,

@@ -512,13 +512,9 @@ function ui_askAfterRainbowPlayLocation(info)
 
     local vis = getTurnTokenLocation()
 
-    logs(">>>>> ui_askAfterRainbowPlayLocation vis", vis)
-
     if vis == "token_mat" then
         vis = table.concat(Player.getAvailableColors(), "|")
     end
-
-    logs(">>>>> ui_askAfterRainbowPlayLocation vis 2", vis)
 
     local panel = {
         tag="Panel",
@@ -561,15 +557,13 @@ end
 
 function ui_onSelectCardPlayLocation(_, call_str)
 
-    logs(">>>>> ui_onSelectCardPlayLocation(str)", call_str)
-
     local tokens = {}
     for token in string.gmatch(call_str, "[^%s]+") do
         table.insert(tokens, token)
     end
     
-    local num = tokens[1]
-    local color_mask = tokens[2]
+    local num = tonumber(tokens[1])
+    local color_mask = tonumber(tokens[2])
 
     local info = Temp_State.askAfterRainbowPlayLocation
     if info == nil then
@@ -633,37 +627,24 @@ end
 
 function ui_LoadUI()
 
-    logs(">>>>> ui_LoadUI")
-
     ui_loadAssetBundle()
-
-    logs(">>>>> ui_LoadUI ui_loadAssetBundle")
 
     local game_rules = getCurrentGameRules()
     setTableImage(game_rules.include_rainbow, game_rules.rainbow_firework)
 
-    logs(">>>>> ui_LoadUI setTableImage")
-
     local global_layout = ui_defaults()
     local parent_table = global_layout[2].children
 
-    logs(">>>>> ui_LoadUI 1")
-
     local all_colors = Player.getAvailableColors()
-    logs(">>>>> ui_LoadUI 1.5")
     local turn_token_location = getTurnTokenLocation()
 
-    logs(">>>>> ui_LoadUI 2")
-
     if turn_token_location == "token_mat" then
-        logs(">>>>> ui_LoadUI turn_token_location == token_mat")
         for _,player_color in ipairs(all_colors) do
             table.insert(parent_table, ui_greeting(player_color))
         end
 
         table.insert(parent_table, ui_gameRuleDialog())
     else
-        logs(">>>>> ui_LoadUI turn_token_location ~= token_mat")
         local wait_colors = {}
         for _,player_color in ipairs(all_colors) do
             if player_color ~= turn_token_location then
@@ -680,7 +661,6 @@ function ui_LoadUI()
     end
 
     if Temp_State.askAfterRainbowPlayLocation ~= nil then
-        logs(">>>>> Temp_State.askAfterRainbowPlayLocation", Temp_State.askAfterRainbowPlayLocation)
         table.insert(
             parent_table,
             ui_askAfterRainbowPlayLocation(
@@ -722,29 +702,14 @@ end
 
 function setTableImage(has_rainbow, has_rainbow_firework)
 
-    -- local hand_data = {}
-    -- for _,hand in ipairs(Hands.getHands()) do
-    --     table.insert(hand_data, hand.getData())
-    -- end
+    local table = getObjectByName("table_surface")
+    local table_data = getObjectByName("table_surface").getCustomObject()
+    local new_img = getTableImage(has_rainbow, has_rainbow_firework)
 
-    -- local current_pic = Tables.getCustomURL()
-    -- local updated_img = getTableImage(has_rainbow, has_rainbow_firework)
-
-    -- --logs(">>>>> Tables.getTableObject().getData()", Tables.getTableObject().getData())
-
-    -- if current_pic ~= updated_img then
-    --     Tables.setCustomURL(updated_img)
-    --     logs(">>>>> Tables.getTableObject().loading_custom",Tables.getTableObject().loading_custom)
-    -- end
-
-
-
-    -- for _,hand in ipairs(Hands.getHands()) do
-    --     destroyObject(hand)
-    -- end
-
-    -- for _,hand_datum in ipairs(hand_data) do
-    --     spawnObjectData({data=hand_datum})
-    -- end
+    if new_img ~= table_data.image then
+        table_data.image = new_img
+        table.setCustomObject(table_data)
+        table.reload()
+    end
 
 end
