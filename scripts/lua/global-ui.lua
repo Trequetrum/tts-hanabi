@@ -54,13 +54,7 @@ function ui_alignmentHelpers()
 end
 
 function playerNameColored(player_color)
-    local player_name = player_color
-    if getPlayer(player_color, false) ~= nil then
-        player_name = getPlayer(player_color).steam_name
-        if string.len(player_name) < 2 then
-            player_name = player_color
-        end
-    end
+    local player_name = getPlayerName(player_color)
 
     return string.format(
         '<textcolor color="#%s"><b>%s</b></textcolor>',
@@ -401,7 +395,7 @@ function ui_hintOptions(color)
 
         local has_rainbow = false
         for _,card in pairs(cards) do
-            if card.color_mask == COLORS_MASK.a then
+            if card.color_mask == COLOR_MASKS.a then
                 has_rainbow = true
                 break
             end
@@ -414,15 +408,15 @@ function ui_hintOptions(color)
             hint_color_mask = bitwiseOr(filter(
                 mapArray(cards, pluck("color_mask")),
                 function(mask)
-                    return mask ~= COLORS_MASK.a
+                    return mask ~= COLOR_MASKS.a
                 end
             ))
         end
 
-        local button_width = 50
-        local button_height = 50
+        local button_width = 80
+        local button_height = 80
         x_offset = 0
-        for c,mask in pairs(COLORS_MASK) do
+        for c,mask in pairs(COLOR_MASKS) do
             if  bit32.band(mask,hint_color_mask) == mask and
                 (c ~= "a" or (has_rainbow and game_rules.rainbow_talking))
             then
@@ -439,7 +433,7 @@ function ui_hintOptions(color)
                     children={{
                         tag="Image",
                         attributes={
-                            image="swatch_" .. c,
+                            image="icon_" .. c,
                             preserveAspect=true
                         }
                     }}
@@ -469,7 +463,7 @@ function ui_hintOptions(color)
                         children={{
                             tag="Image",
                             attributes={
-                                image="swatch_" .. num_rep,
+                                image="icon_" .. num_rep,
                                 preserveAspect=true
                             }
                         }}
@@ -488,11 +482,23 @@ function ui_onTalkToPlayer(player, talking_to, id)
     Temp_State.talking_to = nil
     local is_number = tonumber(talk_char)
 
+    local talk_about = "cards"
     if is_number ~= nil then
         giveHintNumber(talking_to, is_number)
+        talk_about = NUMBER_STRINGS[is_number]
     else
-        giveHintColors(talking_to, COLORS_MASK[talk_char])
+        giveHintColors(talking_to, COLOR_MASKS[talk_char])
+        talk_about = COLOR_STRINGS[talk_char]
     end
+
+    local speaker = getPlayerName(player.color)
+    local listener = getPlayerName(talking_to)
+
+    broadcastToAll(
+        speaker .. " told " ..
+        listener .. " about their " ..
+        talk_about .. "(s)"
+    )
 
     useHintToken()(advanceTurnToken)
 end
@@ -579,20 +585,33 @@ function ui_loadAssetBundle()
     if not Temp_State.isLoadedUiAssetBundle then
         Temp_State.isLoadedUiAssetBundle = true
         local assets = {}
-        for color,_ in pairs(COLORS_MASK) do
+        -- for color,_ in pairs(COLOR_MASKS) do
+        --     table.insert(assets, {
+        --         name="swatch_" .. color,
+        --         url=getHanabiSwatchUrl(color)
+        --     })
+        -- end
+        -- for _,num in ipairs(NUMBERS_REP) do
+        --     table.insert(assets, {
+        --         name="swatch_" .. num,
+        --         url=getHanabiSwatchUrl(num)
+        --     })
+        -- end
+
+        for color,_ in pairs(COLOR_MASKS) do
             table.insert(assets, {
-                name="swatch_" .. color,
-                url=getHanabiSwatchUrl(color)
+                name="icon_" .. color,
+                url=getHanabiIconUrl(color)
             })
         end
         for _,num in ipairs(NUMBERS_REP) do
             table.insert(assets, {
-                name="swatch_" .. num,
-                url=getHanabiSwatchUrl(num)
+                name="icon_" .. num,
+                url=getHanabiIconUrl(num)
             })
         end
 
-        for color_char,_ in pairs(COLORS_MASK) do
+        for color_char,_ in pairs(COLOR_MASKS) do
             for _,num in ipairs(NUMBERS_REP) do
                 table.insert(assets, {
                     name="card_front_" .. num .. color_char,
@@ -601,7 +620,7 @@ function ui_loadAssetBundle()
             end
         end
 
-        for _,color_mask in pairs(COLORS_MASK) do
+        for _,color_mask in pairs(COLOR_MASKS) do
             table.insert(assets, {
                 name="card_back_no_number_" .. color_mask,
                 url=generated_back_url(0, color_mask)
@@ -613,12 +632,18 @@ function ui_loadAssetBundle()
                 })
             end
         end
+
         for num,_ in ipairs(NUMBERS_REP) do
             table.insert(assets, {
                 name="card_back_" .. num .. "_no_mask",
                 url=generated_back_url(num, 0)
             })
         end
+
+        table.insert(assets,{
+            name="background_ui",
+            url=
+        })
 
         UI.setCustomAssets(assets)
     end
@@ -683,6 +708,15 @@ end
 function getHanabiSwatchUrl(name)
     name = "" .. name
     return ASSET_URL .. "back_" .. name .. "_" .. ASSET_VERSION .. ".png"
+end
+
+function getHanabiIconUrl(name)
+    name = "" .. name
+    return ASSET_URL .. "icon_" .. name .. "_" .. ASSET_VERSION .. ".png"
+end
+
+function getBackgroundColorUrl()
+    return ASSET_URL .. "_" .. ASSET_VERSION .. ".png"
 end
 
 function getTableImage(has_rainbow, has_rainbow_firework)

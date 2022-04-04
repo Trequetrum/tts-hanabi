@@ -3,7 +3,6 @@
 ---------------------------------------------------------------------
 
 --[[
-    Playing rainbow 1 as green/yellow played it as rainbow
     Implement rule when colors arn't wild for rainbow
     make talking selection more reactive
 ]]
@@ -19,6 +18,15 @@ ASSET_BACK_BLANK_URL = ASSET_URL .. "back_blank_" .. ASSET_VERSION .. ".png"
 -- Filenames describe cards and have a canonical order for colors as
 -- listed here
 COLOR_ORDER = {'b', 'g', 'r', 'w', 'y'}
+
+COLOR_STRINGS = {
+    a="rainbow",
+    b="blue",
+    g="green",
+    r="red",
+    w="white",
+    y="yellow"
+}
 
 -- Bit mask for the card colors. Used to describe the 'notes' on the
 -- back of a card. While players can infer that anything more than one
@@ -36,7 +44,7 @@ COLOR_ORDER = {'b', 'g', 'r', 'w', 'y'}
 -- r: red
 -- w: white
 -- y: yellow
-COLORS_MASK = {
+COLOR_MASKS = {
     a = tonumber('11111', 2), -- 31
     b = tonumber('1', 2), -- 1
     g = tonumber('10', 2), -- 2
@@ -48,6 +56,8 @@ COLORS_MASK = {
 -- Hard-coding how each number is represented as a string on their 
 -- respective filenames.
 NUMBERS_REP = {'1','2','3','4','5'}
+
+NUMBER_STRINGS = {"one", "two", "three", "four", "five"}
 
 -- Hard-coding how many cards of each number exist for a color.
 -- Used when generating the hanabi deck
@@ -79,7 +89,7 @@ Temp_State={
 }
 
 function colorCharFromMask(color_mask)
-    for char, mask in pairs(COLORS_MASK) do
+    for char, mask in pairs(COLOR_MASKS) do
         if mask == color_mask then return char end
     end
     return 'a'
@@ -120,7 +130,7 @@ function onObjectEnterZone(tts_zone, tts_object)
             tapFunction(function()
                 local location = getTurnTokenLocation()
                 if location ~= "token_mat" then
-                    broadcastToAll("Starting " .. location .. "'s turn")
+                    broadcastToAll("Starting " .. getPlayerName(location) .. "'s turn")
                 end
                 ui_LoadUI()
                 Temp_State.tracking_turn_token = false
@@ -140,43 +150,58 @@ function onObjectEnterZone(tts_zone, tts_object)
     if  tts_zone.guid == TTS_GUID.play_mat or
         tts_zone.guid == TTS_GUID.discard_mat
     then
-        -- kleisliPipeOn(tts_object, {
-        --     continueIf(isHanabiCard),
-        --     continueIf(function(card)
-        --         local continue = Temp_State.active_cards[card.getGUID()] ~= true
-        --         Temp_State.active_cards[card.getGUID()] = true
-        --         return continue
-        --     end),
-        --     waitUntilResting,
-        --     continueIf(function(card)
-        --         local continue = isObjectInZone(tts_zone)(card)
-        --         if not continue then
-        --             Temp_State.active_cards[card.getGUID()] = false
-        --         end
-        --         return continue
-        --     end),
-        --     tapFunction(function(card) card.setHiddenFrom({}) end),
-        --     flipFaceUp,
-        --     tapCallback(waitFrames(10)),
-        --     smoothRelativeMove({0, 5, 0}),
-        --     function(card)
-        --         if tts_zone.guid == TTS_GUID.discard_mat then
-        --             recoverHintToken()()
-        --             return discardCard(card)
-        --         elseif tts_zone.guid == TTS_GUID.play_mat then
-        --             return playCard(card)
-        --         end
-        --     end,
-        --     tapFunction(function(card)
-        --         Temp_State.active_cards[card.getGUID()] = false
-        --     end),
-        --     tapFunction(advanceTurnToken)
-        -- })()
-
         kleisliPipeOn(tts_object, {
-            continueIf(function(oby) return oby.getQuantity() > 0 end),
+            continueIf(isHanabiCard),
+            continueIf(function(card)
+                local continue = Temp_State.active_cards[card.getGUID()] ~= true
+                Temp_State.active_cards[card.getGUID()] = true
+                return continue
+            end),
             waitUntilResting,
-            continueIf(isObjectInZone(tts_zone)),
+            continueIf(notDestoyed),
+            continueIf(function(card)
+                local continue = isObjectInZone(tts_zone)(card)
+                if not continue then
+                    Temp_State.active_cards[card.getGUID()] = false
+                end
+                return continue
+            end),
+            tapFunction(function(card) card.setHiddenFrom({}) end),
+            flipFaceUp,
+            continueIf(notDestoyed),
+            smoothRelativeMove({0, 5, 0}),
+            continueIf(notDestoyed),
+            function(card)
+                if tts_zone.guid == TTS_GUID.discard_mat then
+                    recoverHintToken()()
+                    return discardCard(card)
+                elseif tts_zone.guid == TTS_GUID.play_mat then
+                    return playCard(card)
+                end
+            end,
+            continueIf(notDestoyed),
+            tapFunction(function(card)
+                Temp_State.active_cards[card.getGUID()] = false
+            end),
+            tapFunction(advanceTurnToken)
+        })()
+   
+        kleisliPipeOn(tts_object, {
+            continueIf(isHanabiCardContainer),
+            continueIf(function(deck)
+                local continue = Temp_State.active_cards[deck.getGUID()] ~= true
+                Temp_State.active_cards[deck.getGUID()] = true
+                return continue
+            end),
+            waitUntilResting,
+            continueIf(notDestoyed),
+            continueIf(function(deck)
+                local continue = isObjectInZone(tts_zone)(deck)
+                if not continue then
+                    Temp_State.active_cards[deck.getGUID()] = false
+                end
+                return continue
+            end),
             function(deck)
                 local sequence = {}
 
@@ -185,11 +210,14 @@ function onObjectEnterZone(tts_zone, tts_object)
                         table.insert(
                             sequence,
                             kleisliPipeOn(deck, {
+                                continueIf(notDestoyed),
                                 -- This is a short leak, I don't expect this code
                                 -- to run very often or for very long, so who cares?
                                 continueIf(isObjectInZone(tts_zone)),
                                 spawnFromContainer(maybe_card.guid),
-                                smoothRelativeMove({0,10,0}),
+                                continueIf(notDestoyed),
+                                smoothRelativeMove({0,0.1,0}),
+                                continueIf(notDestoyed),
                                 tapFunction(function(card)
                                     if tts_zone.getGUID() == TTS_GUID.discard_mat then
                                         discardCard(card)()
@@ -206,9 +234,7 @@ function onObjectEnterZone(tts_zone, tts_object)
 
                 return seriesCallback(sequence)
             end
-        })(function(...)
-            logs(">>>>> end:", {...})
-        end)
+        })()
 
     end
 
@@ -247,6 +273,8 @@ function onLoad()
     hideCardsInHands()
     settupGameKeys()
 
+    --test_series()
+
     -- Wait.time(
     --     function()
     --         logs(">>>>> getCurrentScore:", getCurrentScore())
@@ -259,4 +287,44 @@ end
 --[[ The onUpdate event is called once per frame. --]]
 function onUpdate()
     --[[ print('onUpdate loop!') --]]
+end
+
+function test_series()
+    local tts_zone = getObjectFromGUID(TTS_GUID.token_mat)
+    local tts_object = getHanabiDeck()
+
+    kleisliPipeOn(tts_object, {
+        continueIf(function(oby) return oby.getQuantity() > 0 end),
+        waitUntilResting,
+        continueIf(isObjectInZone(tts_zone)),
+        function(deck)
+            local sequence = {}
+
+            for _,maybe_card in pairs(deck.getObjects()) do
+                if isHanabiCard(maybe_card) then
+                    table.insert(
+                        sequence,
+                        kleisliPipeOn(deck, {
+                            -- This is a short leak, I don't expect this code
+                            -- to run very often or for very long, so who cares?
+                            continueIf(isObjectInZone(tts_zone)),
+                            spawnFromContainer(maybe_card.guid),
+                            smoothRelativeMove({0,10,0}),
+                            tapFunction(function(card)
+                                if tts_zone.getGUID() == TTS_GUID.discard_mat then
+                                    discardCard(card)()
+                                elseif tts_zone.getGUID() == TTS_GUID.play_mat then
+                                    playCard(card)()
+                                else
+                                    smoothMove({0,10,0})(card)()
+                                end
+                            end)
+                        })
+                    )
+                end
+            end
+
+            return seriesCallback(sequence)
+        end
+    })()
 end

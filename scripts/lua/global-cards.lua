@@ -9,7 +9,7 @@ function generated_back_url(num, color_mask)
     local num_str = ""
 
     for _, color in ipairs(COLOR_ORDER) do
-        if bit32.band(COLORS_MASK[color], color_mask) == COLORS_MASK[color] then
+        if bit32.band(COLOR_MASKS[color], color_mask) == COLOR_MASKS[color] then
             colors_str = colors_str .. color
         end
     end
@@ -25,7 +25,7 @@ function generated_front_url_char(num, color_char)
 end
 
 function generated_front_url(num, color_mask)
-    for color, mask in pairs(COLORS_MASK) do
+    for color, mask in pairs(COLOR_MASKS) do
         if mask == color_mask then
             return generated_front_url_char(num, color)
         end     
@@ -44,7 +44,7 @@ function generateDeckInfo()
             layout_num = COLOR_LAYOUT[num]
         end
         for i = 1, layout_num do
-            for color, mask in pairs(COLORS_MASK) do
+            for color, mask in pairs(COLOR_MASKS) do
                 table.insert(deck_info, {
                     front_url = generated_front_url_char(num, color),
                     back_url = generated_back_url(0,0),
@@ -64,19 +64,23 @@ function generateDeckInfo()
 end
 
 function isHanabiCard(tts_object)
-    if tts_object == nil then return false end
+    if tts_object == nil then
+        return false
+    end
 
     local info = JSON.decode(tts_object.memo or "")
     if  info ~= nil and 
         info.front_number ~= nil and 
-        info.front_color_mask ~= nil then
-            return true
-    end
+        info.front_color_mask ~= nil 
+    then return true end
+
     return false
 end
 
 function isHanabiCardContainer(tts_object)
-    if tts_object.getQuantity() > 0 then
+    if  not tts_object.isDestroyed() and
+        tts_object.getQuantity() > 0
+    then
         local cards = tts_object.getObjects()
         for _,card in ipairs(cards) do
             if isHanabiCard(card) then
@@ -110,7 +114,9 @@ function discardCard(card)
             return move_coords
         end, {
             remember(curryFlip(smoothMove)(card)),
+            continueIf(notDestoyed),
             remember(smoothRotation({0,180,0})),
+            continueIf(notDestoyed),
             function(card, _, move_coords)
                 local card_info = JSON.decode(card.memo)
                 move_coords.y = 1
@@ -172,6 +178,23 @@ end
 function playCard(card)
     return kleisliPipeOn(card, {
         tapFunction(function(t) t.setLock(true) end),
+        tapFunction(function(card)
+            local turn_location = getTurnTokenLocation()
+            local player_name = "Somebody"
+            if turn_location ~= "token_mat" then
+                player_name = getPlayerName(turn_location)
+            end
+            local card_info = JSON.decode(card.memo)
+
+            broadcastToAll(
+                player_name ..
+                " played a " ..
+                COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)] ..
+                " " ..
+                NUMBER_STRINGS[tonumber(card_info.front_number)]
+            )
+
+        end),
         function(card)
             local info = JSON.decode(card.memo)
             local num = info.front_number
@@ -180,7 +203,7 @@ function playCard(card)
             local move_coords = layoutPlayCard(num, color_mask)
             move_coords.y = 3
 
-            if  color_mask ~= COLORS_MASK.a or
+            if  color_mask ~= COLOR_MASKS.a or
                 (   getCurrentGameRules().rainbow_firework and
                     not getCurrentGameRules().rainbow_wild
                 )
@@ -191,12 +214,13 @@ function playCard(card)
             end
         end,
         remember(function(coords, card)
-            if coords.y < 0 then
+            if coords.y < 0 or card.isDestroyed() then
                 return liftValuesToCallback(card, true)
             else
                 return smoothMove(coords)(card)
             end
         end),
+        continueIf(notDestoyed),
         tapFunction(function(t) t.setLock(false) end),
         function(card, _, move_coords)
 
@@ -217,7 +241,9 @@ function playCard(card)
             end
             return kleisliPipeOn(card, {
                 smoothRotation({0,180,0}),
+                continueIf(notDestoyed),
                 waitUntilResting,
+                continueIf(notDestoyed),
                 tapBind(function()
                     if num == 5 then return recoverHintToken() end
                     return liftValuesToCallback(1)
@@ -232,7 +258,7 @@ function askAfterRainbowPlayLocation(card)
     local card_num = info.front_number
     local card_color_mask = info.front_color_mask
 
-    if card_color_mask ~= COLORS_MASK.a then
+    if card_color_mask ~= COLOR_MASKS.a then
         printToAll("Alert: askAfterRainbowPlayLocation run without rainbow card")
         return liftValuesToCallback(Vector(-1,-1,-1), card)
     end
@@ -241,9 +267,9 @@ function askAfterRainbowPlayLocation(card)
 
     local played_cards = cardFireworkStatus()
 
-    for _,color_mask in pairs(COLORS_MASK) do
+    for _,color_mask in pairs(COLOR_MASKS) do
         if  -- We can only play rainbow if it is it's own firework and
-            (   color_mask ~= COLORS_MASK.a or
+            (   color_mask ~= COLOR_MASKS.a or
                 getCurrentGameRules().rainbow_firework
             ) and
             -- We can only play a number if there's a sport for it and
@@ -252,7 +278,7 @@ function askAfterRainbowPlayLocation(card)
             -- rainbow firework (So it can have as many as it likes)
             -- or we can have more than one wild card per firework
             (   (not played_cards[color_mask].rainbow) or
-                color_mask == COLORS_MASK.a or
+                color_mask == COLOR_MASKS.a or
                 (not getCurrentGameRules().rainbow_one_per_firework)
             )
         then
@@ -296,7 +322,7 @@ function cardFireworkStatus()
 
     local retTbl = {}
 
-    for _,color_mask in pairs(COLORS_MASK) do
+    for _,color_mask in pairs(COLOR_MASKS) do
 
         retTbl[color_mask] = {
             count = 0,
@@ -322,7 +348,7 @@ function cardFireworkStatus()
                     count = retTbl[color_mask].count + 1,
                     rainbow = 
                         retTbl[color_mask].rainbow or
-                        (mask == COLORS_MASK.a)
+                        (mask == COLOR_MASKS.a)
                 }
             end
         end
@@ -408,7 +434,7 @@ function spawnHanabiDeck(include_rainbow)
         deck_info = filterArray(
             deck_info,
             function(info)
-                return info.state.front_color_mask ~= COLORS_MASK.a
+                return info.state.front_color_mask ~= COLOR_MASKS.a
             end
         )
     end

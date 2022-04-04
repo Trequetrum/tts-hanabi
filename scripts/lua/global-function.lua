@@ -12,7 +12,7 @@ end
 function colorMaskToIndex(color_mask)
 
     for i, color in ipairs(COLOR_ORDER) do
-        if COLORS_MASK[color] == color_mask then
+        if COLOR_MASKS[color] == color_mask then
             return i
         end
     end
@@ -61,6 +61,15 @@ function getPlayer(color, verbose)
 
     if verbose then
         printToAll("Alert: No seated player for " .. color)
+    end
+end
+
+function getPlayerName(color)
+    local player = getPlayer(color)
+    if player ~= nil and string.len(player.steam_name) > 0 then
+        return player.steam_name
+    else
+        return color
     end
 end
 
@@ -156,7 +165,7 @@ function getCurrentScore()
 
     local score = 0
 
-    for _,color_mask in pairs(COLORS_MASK) do
+    for _,color_mask in pairs(COLOR_MASKS) do
 
         local check_pos = layoutPlayCard(1, color_mask)
 
@@ -378,4 +387,8 @@ function getPositionInfrontOf(color)
         pos.z = pos.z + offset
     end
     return pos
+end
+
+function notDestoyed(o)
+    return not o.isDestroyed()
 end
