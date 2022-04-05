@@ -255,3 +255,33 @@ function scale(scale)
         end
     end
 end
+
+function changeToAvailableColor(player)
+    return function(callback)
+
+        local taken = {}
+        for _,player in ipairs(Player.getPlayers()) do
+            taken[player.color] = true
+        end
+
+        local acted = false
+        for _,color in ipairs(Player.getAvailableColors()) do
+            if not taken[color] then
+                player.changeColor(color)
+                acted = true
+                Wait.frames(function()
+                    callback(player)
+                end, 30)
+                break
+            end
+        end
+
+        if not acted then
+            player.changeColor("Grey")
+            Wait.frames(function()
+                callback(player)
+            end, 30)
+        end
+
+    end
+end

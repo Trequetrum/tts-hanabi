@@ -111,6 +111,8 @@ function discardCard(card)
                 move_coords.x = move_coords.x + LAYOUT_CARD_WIDTH
             end
 
+            broadcastPlayDiscardText(false, card_info)
+
             return move_coords
         end, {
             remember(curryFlip(smoothMove)(card)),
@@ -174,26 +176,42 @@ function layoutDiscardCard(card_num, color_mask)
     })
 end
 
+function broadcastPlayDiscardText(played, card_info)
+    local played_txt = " played"
+    if not played then
+        played_txt = " discarded"
+    end
+
+    local turn_location = getTurnTokenLocation()
+    local player_name = "Somebody"
+    if turn_location ~= "token_mat" then
+        player_name = ui_playerNameBBCodeColored(turn_location)
+    end
+
+    local card_color = ui_textBBCodeRainbow()
+    local card_number = NUMBER_STRINGS[tonumber(card_info.front_number)]
+
+    if card_info.front_color_mask ~= COLOR_MASKS.a then
+        card_color = ui_textBBCodeColored(
+            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)],
+            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)]
+        )
+        card_number = ui_textBBCodeColored(
+            card_number,
+            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)]
+        )
+    end
+
+    broadcastToAll(player_name .. played_txt .. " a " .. card_color .. " " .. card_number)
+
+end
 
 function playCard(card)
     return kleisliPipeOn(card, {
         tapFunction(function(t) t.setLock(true) end),
         tapFunction(function(card)
-            local turn_location = getTurnTokenLocation()
-            local player_name = "Somebody"
-            if turn_location ~= "token_mat" then
-                player_name = getPlayerName(turn_location)
-            end
             local card_info = JSON.decode(card.memo)
-
-            broadcastToAll(
-                player_name ..
-                " played a " ..
-                COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)] ..
-                " " ..
-                NUMBER_STRINGS[tonumber(card_info.front_number)]
-            )
-
+            broadcastPlayDiscardText(true, card_info)
         end),
         function(card)
             local info = JSON.decode(card.memo)
@@ -259,7 +277,7 @@ function askAfterRainbowPlayLocation(card)
     local card_color_mask = info.front_color_mask
 
     if card_color_mask ~= COLOR_MASKS.a then
-        printToAll("Alert: askAfterRainbowPlayLocation run without rainbow card")
+        displayLog("Alert: askAfterRainbowPlayLocation run without rainbow card")
         return liftValuesToCallback(Vector(-1,-1,-1), card)
     end
 
@@ -421,7 +439,7 @@ function getHanabiDeck(verbose)
     Temp_State.deck = deck
 
     if deck == nil and verbose then
-        printToAll("Alert: Failure to find hanabi deck")
+        displayLog("Alert: Failure to find hanabi deck")
     end
 
     return deck

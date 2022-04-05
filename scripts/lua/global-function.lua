@@ -38,7 +38,7 @@ function getObjectByName(name)
         end
     end
 
-    printToAll("ALERT! Cannot find object with name: " .. name)
+    displayLog("ALERT! Cannot find object with name: " .. name)
 
     return nil
 end
@@ -60,7 +60,7 @@ function getPlayer(color, verbose)
     end
 
     if verbose then
-        printToAll("Alert: No seated player for " .. color)
+        displayLog("Alert: No seated player for " .. color)
     end
 end
 
@@ -80,7 +80,7 @@ function getHandZone(color)
         end
     end
 
-    printToAll("Alert: Failure to find hand zone for " .. color)
+    displayLog("Alert: Failure to find hand zone for " .. color)
 end
 
 function getCardsInHandZone(color)
@@ -94,7 +94,10 @@ function getCardsInHandZone(color)
 end
 
 function getCurrentDealAmount()
-    if #Player.getPlayers() > 3 then
+    local player_count = #getActivePlayerColors()
+    if player_count > 5 then
+        return 3
+    elseif player_count > 3 then
         return 4
     else
         return 5
@@ -122,12 +125,12 @@ function turnDeal()
 
     local deck = getHanabiDeck(false)
     if deck == nil then
-        printToAll("Info: No more cards, no end of turn deal")
+        displayLog("Info: No more cards, no end of turn deal")
         return liftValuesToCallback({false})
     end
 
     local callback_thunks = {}
-    for _,player_color in ipairs(Player.getAvailableColors()) do
+    for _,player_color in ipairs(getActivePlayerColors()) do
         
         table.insert(callback_thunks, kleisliPipeOn({
             player_color=player_color,
@@ -219,18 +222,39 @@ function giveHintNumber(player_color, number)
 end
 
 function giveHintColors(player_color, color_mask)
+    local multicolor = getCurrentGameRules().rainbow_multicolor
+
     local cards = getCardsInHandZone(player_color)
     for _,card in pairs(cards) do
         local info = JSON.decode(card.memo)
-        if  info.back_color_mask ~= color_mask and
-            bit32.bor(info.front_color_mask, color_mask) == info.front_color_mask
+
+        local updated_mask = color_mask
+        if multicolor then
+            updated_mask = bit32.bor(info.back_color_mask, color_mask)
+        end
+
+        local masked = bit32.bor(info.front_color_mask, updated_mask) == info.front_color_mask
+
+        if  info.back_color_mask ~= updated_mask and (
+                updated_mask == info.front_color_mask or
+                (multicolor and masked)
+            )
         then
-            local updated_mask = bit32.bor(info.back_color_mask, color_mask)
+
             info.back_color_mask = updated_mask
             card.memo = JSON.encode(info)
             swapCardBack(card, info.back_number, updated_mask)(
                 function(new_card)
+                    logs(">>>>> giveHintColors new_card:", new_card)
                     new_card.setHiddenFrom({player_color})
+                    new_card.UI.setXmlTable({{
+                        tag="Panel",
+                        attributes={
+                            width=300,
+                            height=300
+                        },
+                        children=ui_alignmentHelpers()
+                    }})
                 end
             )
         end
@@ -296,24 +320,23 @@ function startDeal()
             tapCallback(waitFrames(30)),
             tapFunction(function(deck)
 
-                local players = Player.getPlayers()
+                local players = getActivePlayerColors()
                 local dealAmount = getCurrentDealAmount()
 
-                for _, player in ipairs(players) do
-                    if  player.getHandCount() > 0 and
-                        #player.getHandObjects() == 0
-                    then
-                        deck.deal(dealAmount, player.color)
+                for _, player_color in ipairs(players) do
+                    local card_count = #getCardsInHandZone(player_color)
+                    if card_count < dealAmount then
+                        deck.deal(dealAmount - card_count, player_color)
                     end
                 end
 
                 --[[
                 This is just for testing purposes. Deal some cards to another
-                player. I've picked red.
+                player. I've picked yellow.
                 ]]
                 if #players == 1 then
-                    if #getCardsInHandZone("Red") == 0 then
-                        deck.deal(5, "Red")
+                    if #getCardsInHandZone("Yellow") == 0 then
+                        deck.deal(5, "Yellow")
                     end
                 end
             end)
@@ -367,7 +390,7 @@ function getActivePlayerColors()
 
     return filterArray(
         noDuplicatesArray(active_colors),
-        function(c) return c ~= "Grey" end
+        function(c) return c ~= "Grey" and c ~= "Black" end
     )
 end
 
@@ -391,4 +414,8 @@ end
 
 function notDestoyed(o)
     return not o.isDestroyed()
+end
+
+function displayLog(...)
+    log(...)
 end

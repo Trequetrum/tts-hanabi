@@ -5,7 +5,8 @@ function ui_defaults()
             tag="Text",
             attributes={
                 color="#ffffff",
-                fontSize="16"
+                fontSize="20",
+                outline="#000000"
             }
         }}
     },{
@@ -53,7 +54,7 @@ function ui_alignmentHelpers()
     }}
 end
 
-function playerNameColored(player_color)
+function ui_playerNameColored(player_color)
     local player_name = getPlayerName(player_color)
 
     return string.format(
@@ -63,6 +64,28 @@ function playerNameColored(player_color)
     )
 end
 
+function ui_textBBCodeRainbow()
+    return ui_textBBCodeColored('r', "Red") ..
+    ui_textBBCodeColored('a', "Orange") ..
+    ui_textBBCodeColored('i', "Yellow") ..
+    ui_textBBCodeColored('n', "Green") ..
+    ui_textBBCodeColored('b', "Teal") ..
+    ui_textBBCodeColored('o', "Blue") ..
+    ui_textBBCodeColored('w', "Purple")
+end
+
+function ui_textBBCodeColored(text, player_color)
+    return string.format(
+        '[%s]%s[-]',
+        Color[player_color]:toHex(),
+        text
+    )
+end
+
+function ui_playerNameBBCodeColored(player_color)
+    return ui_textBBCodeColored(getPlayerName(player_color), player_color)
+end
+
 function ui_greeting(color)
     return {
         tag="Panel",
@@ -70,13 +93,13 @@ function ui_greeting(color)
             id=color .. "_greeting_UI",
             visibility=color,
             rectAlignment="UpperRight",
-            offsetXY="0 -80",
+            offsetXY="0 0",
             height="100",
             width="400"
         },
         children={{
             tag="Text",
-            value="Hello " .. playerNameColored(color) .. ", the game hasn't started yet",
+            value="Hello " .. ui_playerNameColored(color) .. ", the game hasn't started yet",
             attributes={
                 alignment="UpperRight",
             }
@@ -91,23 +114,34 @@ function ui_greeting(color)
     }
 end
 
+function ui_backgroundColor()
+    return {
+        tag="Image",
+        attributes={
+            color="rgba(0.145,0.145,0.286,0.5)"
+        }
+    }
+end
+
 function ui_pleaseWait(colors_string, color_turn)
+    local text = ui_playerNameColored(color_turn) .. "'s turn, please wait"
+    -- local width = (string.len(text) * 6) + 10
     return {
         tag="Panel",
         attributes={
             id=colors_string .. "_UI",
             visibility=colors_string,
             rectAlignment="UpperRight",
-            offsetXY="0 -80",
-            height="100",
-            width="400"
+            offsetXY="0 0",
+            height=30,
+            width=400
         },
         children={{
             tag="Text",
-            value=playerNameColored(color_turn) .. "'s turn, please wait",
+            value=text,
             attributes={
-                alignment="UpperRight",
-                fontSize=20
+                alignment="MiddleRight",
+                offsetXY="0 0"
             }
         }}
     }
@@ -119,17 +153,22 @@ function ui_createGameRuleToggle(rule, text, y_offset)
 
     return {
         tag="Toggle",
-        value=text,
         attributes={
             id=rule,
             onValueChanged="ui_onGameRuleToggle",
             isOn=game_rules[rule],
             rectAlignment="UpperRight",
             offsetXY="0 " .. y_offset,
-            textColor="#ffffff",
             width="350",
             height="30"
-        }
+        },
+        children={{
+            tag="Text",
+            value=text,
+            attributes={
+                fontSize=16
+            }
+        }}
     }
 end
 
@@ -146,7 +185,7 @@ function ui_gameRuleDialog()
         tag="Panel",
         attributes={
             rectAlignment="UpperRight",
-            offsetXY="0 -180",
+            offsetXY="0 -100",
             width="400",
             height="400",
             visibility=table.concat(Player.getAvailableColors(), "|")
@@ -248,7 +287,7 @@ function ui_activeTurnUi(color)
         attributes={
             rectAlignment="UpperRight",
             visibility=color,
-            offsetXY="0 -80",
+            offsetXY="0 0",
             width="400",
             height="400"
         },
@@ -257,9 +296,8 @@ function ui_activeTurnUi(color)
 
     local message = {
         tag="Text",
-        value=playerNameColored(color) .. ", it's your turn.",
+        value=ui_playerNameColored(color) .. ", it's your turn.",
         attributes={
-            fontSize="20",
             alignment="UpperRight"
         }
     }
@@ -275,7 +313,6 @@ function ui_activeTurnUi(color)
         tag="Text",
         value=txt,
         attributes={
-            fontSize="20",
             alignment="UpperRight",
             offsetXY="0 -30"
         }
@@ -312,7 +349,6 @@ function ui_hintOptions(color)
         tag="Text",
         value="or talk to a player",
         attributes={
-            fontSize="20",
             alignment="UpperRight"
         }
     }
@@ -335,15 +371,15 @@ function ui_hintOptions(color)
         end
     end
 
-    function getXOffset(num, total)
-        local players_left = total - num
-        local to_the_right = (3 - (num % 3)) % 3
-        if players_left >= to_the_right then
-            return 0 - (120 * to_the_right)
-        else
-            return 0 - (120 * players_left)
-        end
-    end
+    -- function getXOffset(num, total)
+    --     local players_left = total - num
+    --     local to_the_right = (3 - (num % 3)) % 3
+    --     if players_left >= to_the_right then
+    --         return 0 - (120 * to_the_right)
+    --     else
+    --         return 0 - (120 * players_left)
+    --     end
+    -- end
 
     for i,player_color in ipairs(players_by_color) do
         
@@ -352,7 +388,7 @@ function ui_hintOptions(color)
             is_on = true
         end
 
-        local toggle_string = playerNameColored(player_color)
+        local toggle_string = ui_playerNameColored(player_color)
 
         table.insert(toggle_group.children, {
             tag="Toggle",
@@ -361,9 +397,9 @@ function ui_hintOptions(color)
                 onValueChanged="ui_onTalkToToggle",
                 isOn=is_on,
                 rectAlignment="UpperRight",
-                offsetXY=getXOffset(i, #players_by_color).." "..y_offset,
+                offsetXY="0 "..y_offset,
                 textColor="#ffffff",
-                width="120",
+                width="180",
                 height="30"
             },
             children={{
@@ -371,13 +407,13 @@ function ui_hintOptions(color)
                 value=toggle_string
             }}
         })
-        if i % 3 == 0 then
-            y_offset = y_offset - 30
-        end
+        --if i % 3 == 0 then
+        y_offset = y_offset - 30
+        --end
             
     end
 
-    y_offset = y_offset - 45
+    y_offset = y_offset - 20
 
     if talk_to ~= "" then
         local game_rules = getCurrentGameRules()
@@ -423,25 +459,26 @@ function ui_hintOptions(color)
                 table.insert(panel.children, {
                     tag="Panel",
                     attributes={
-                        id="talk_to_" .. talk_to .. ":" .. c,
-                        onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
                         offsetXY=x_offset .. " " .. y_offset,
                         rectAlignment="UpperRight",
                         width=button_width,
                         height=button_height
                     },
                     children={{
-                        tag="Image",
+                        tag="Button",
                         attributes={
-                            image="icon_" .. c,
-                            preserveAspect=true
+                            icon="icon_" .. c,
+                            id="talk_to_" .. talk_to .. ":" .. c,
+                            onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
+                            preserveAspect=true,
+                            colors="rgba(0,0,0,0)|rgba(1,1,1,0.2)|rgba(0,0,0,0.5)|rgba(0,0,0,0.5)"
                         }
                     }}
                 })
-                x_offset = x_offset - button_width - 10
+                x_offset = x_offset - button_width
             end
         end
-        y_offset = y_offset - button_height - 10
+        y_offset = y_offset - button_height 
         x_offset = 0
 
         for i = #NUMBERS_REP, 1, -1 do
@@ -453,22 +490,23 @@ function ui_hintOptions(color)
                     table.insert(panel.children, {
                         tag="Panel",
                         attributes={
-                            id="talk_to_" .. talk_to .. ":" .. num_rep,
-                            onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
                             offsetXY=x_offset .. " " .. y_offset,
                             rectAlignment="UpperRight",
                             width=button_width,
                             height=button_height
                         },
                         children={{
-                            tag="Image",
+                            tag="Button",
                             attributes={
-                                image="icon_" .. num_rep,
-                                preserveAspect=true
+                                icon="icon_" .. num_rep,
+                                id="talk_to_" .. talk_to .. ":" .. num_rep,
+                                onClick="ui_onTalkToPlayer(" .. talk_to .. ")",
+                                preserveAspect=true,
+                                colors="rgba(0,0,0,0)|rgba(1,1,1,0.2)|rgba(0,0,0,0.5)|rgba(0,0,0,0.5)"
                             }
                         }}
                     })
-                    x_offset = x_offset - button_width - 10
+                    x_offset = x_offset - button_width
                 end
             end
         end
@@ -488,11 +526,14 @@ function ui_onTalkToPlayer(player, talking_to, id)
         talk_about = NUMBER_STRINGS[is_number]
     else
         giveHintColors(talking_to, COLOR_MASKS[talk_char])
-        talk_about = COLOR_STRINGS[talk_char]
+        talk_about = ui_textBBCodeColored(
+            COLOR_STRINGS[talk_char],
+            COLOR_STRINGS[talk_char]
+        )
     end
 
-    local speaker = getPlayerName(player.color)
-    local listener = getPlayerName(talking_to)
+    local speaker = ui_playerNameBBCodeColored(player.color)
+    local listener = ui_playerNameBBCodeColored(talking_to)
 
     broadcastToAll(
         speaker .. " told " ..
@@ -573,7 +614,7 @@ function ui_onSelectCardPlayLocation(_, call_str)
 
     local info = Temp_State.askAfterRainbowPlayLocation
     if info == nil then
-        printToAll("Alert: ui_onSelectCardPlayLocation run without Temp_State set")
+        displayLog("Alert: ui_onSelectCardPlayLocation run without Temp_State set")
         return
     end
 
@@ -585,18 +626,6 @@ function ui_loadAssetBundle()
     if not Temp_State.isLoadedUiAssetBundle then
         Temp_State.isLoadedUiAssetBundle = true
         local assets = {}
-        -- for color,_ in pairs(COLOR_MASKS) do
-        --     table.insert(assets, {
-        --         name="swatch_" .. color,
-        --         url=getHanabiSwatchUrl(color)
-        --     })
-        -- end
-        -- for _,num in ipairs(NUMBERS_REP) do
-        --     table.insert(assets, {
-        --         name="swatch_" .. num,
-        --         url=getHanabiSwatchUrl(num)
-        --     })
-        -- end
 
         for color,_ in pairs(COLOR_MASKS) do
             table.insert(assets, {
@@ -639,11 +668,6 @@ function ui_loadAssetBundle()
                 url=generated_back_url(num, 0)
             })
         end
-
-        table.insert(assets,{
-            name="background_ui",
-            url=
-        })
 
         UI.setCustomAssets(assets)
     end
@@ -713,10 +737,6 @@ end
 function getHanabiIconUrl(name)
     name = "" .. name
     return ASSET_URL .. "icon_" .. name .. "_" .. ASSET_VERSION .. ".png"
-end
-
-function getBackgroundColorUrl()
-    return ASSET_URL .. "_" .. ASSET_VERSION .. ".png"
 end
 
 function getTableImage(has_rainbow, has_rainbow_firework)

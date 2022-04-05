@@ -4,7 +4,6 @@
 
 --[[
     Implement rule when colors arn't wild for rainbow
-    make talking selection more reactive
 ]]
 
 -- Pictures are stored/hosted by this project's github repo
@@ -130,7 +129,7 @@ function onObjectEnterZone(tts_zone, tts_object)
             tapFunction(function()
                 local location = getTurnTokenLocation()
                 if location ~= "token_mat" then
-                    broadcastToAll("Starting " .. getPlayerName(location) .. "'s turn")
+                    broadcastToAll("Starting " .. ui_playerNameBBCodeColored(location) .. "'s turn")
                 end
                 ui_LoadUI()
                 Temp_State.tracking_turn_token = false
@@ -266,27 +265,47 @@ function settupGameKeys()
 
 end
 
+function ensureLegalPlayerColors()
+    local legal = {Grey=true}
+    for _,color in ipairs(Player.getAvailableColors()) do
+        legal[color] = true
+    end
+
+    local series = {}
+
+    for _,player in ipairs(Player.getPlayers()) do
+        if not legal[player.color] then
+            table.insert(series, changeToAvailableColor(player))
+        end
+    end
+
+    seriesCallback(series)()
+end
+
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
     log("Hello World!")
     ui_LoadUI()
     hideCardsInHands()
     settupGameKeys()
-
-    --test_series()
+    ensureLegalPlayerColors()
 
     -- Wait.time(
     --     function()
-    --         logs(">>>>> getCurrentScore:", getCurrentScore())
+    --         local players = Player.getPlayers()
+    --         for _,player in ipairs(players) do
+    --             logs(">>>>> player.color:", player.color)
+    --         end
     --     end,
     --     5,
     --     100
     -- )
 end
 
---[[ The onUpdate event is called once per frame. --]]
-function onUpdate()
-    --[[ print('onUpdate loop!') --]]
+function onPlayerConnect()
+    Wait.frames(function()
+        ensureLegalPlayerColors()
+    end, 60)
 end
 
 function test_series()

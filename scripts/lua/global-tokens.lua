@@ -68,7 +68,7 @@ function advanceTurnToken()
                 end
             end
 
-            printToAll("Alert: Failure to advance the turn token")
+            displayLog("Alert: Failure to advance the turn token")
 
     
         end
@@ -194,8 +194,10 @@ function useFuseToken()
                 elseif num == 2 then
                     broadcastToAll("A second missfire, be careful")
                 elseif num == 3 then
-                    broadcastToAll("Final score is " .. getCurrentScore())
-                    broadcastToAll("The third missfire, the show cannot go on")
+                    broadcastToAll(
+                        "The third missfire, the show cannot go on\n" ..
+                        "Final score is " .. getCurrentScore()
+                    )
                 end
             end),
             smoothMove({0,4,0}),
