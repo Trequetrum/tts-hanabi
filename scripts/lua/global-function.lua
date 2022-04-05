@@ -177,8 +177,7 @@ function getCurrentScore()
             direction = {0, 0, 1},
             max_distance = (#NUMBERS_REP - 1) * LAYOUT_CARD_HEIGHT,
             origin = check_pos,
-            size= { 0, 5, 0 },
-            debug = true
+            size= { 0, 1, 0 }
         })
 
         local color_score = 0

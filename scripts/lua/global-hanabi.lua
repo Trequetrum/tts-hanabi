@@ -292,10 +292,7 @@ function onLoad()
 
     -- Wait.time(
     --     function()
-    --         local players = Player.getPlayers()
-    --         for _,player in ipairs(players) do
-    --             logs(">>>>> player.color:", player.color)
-    --         end
+    --         logs(">>>>> getCurrentScore() ", getCurrentScore())
     --     end,
     --     5,
     --     100

@@ -261,7 +261,19 @@ function playCard(card)
                 smoothRotation({0,180,0}),
                 continueIf(notDestoyed),
                 waitUntilResting,
-                continueIf(notDestoyed),
+                tapFunction(function()
+                    local score = getCurrentScore()
+                    local rules = getCurrentGameRules()
+                    if  score > 29 or
+                        (   (not rules.include_rainbow or
+                            not rules.rainbow_firework) and 
+                            score > 24
+                        )
+                    then
+                        Temp_State.perfect_score_spash = true
+                        ui_LoadUI()
+                    end
+                end),
                 tapBind(function()
                     if num == 5 then return recoverHintToken() end
                     return liftValuesToCallback(1)

@@ -669,9 +669,19 @@ function ui_loadAssetBundle()
             })
         end
 
+        table.insert(assets, {
+            name="perfect_score_spash",
+            url=getHanabiPerfectScoreSplash()
+        })
+
         UI.setCustomAssets(assets)
     end
 
+end
+
+function ui_clickPerfectScoreSpash()
+    Temp_State.perfect_score_spash = false
+    ui_LoadUI()
 end
 
 function ui_LoadUI()
@@ -684,6 +694,18 @@ function ui_LoadUI()
     local global_layout = ui_defaults()
     local parent_table = global_layout[2].children
 
+    if Temp_State.perfect_score_spash then
+        table.insert(parent_table, {
+            tag="Image",
+            attributes={
+                image="perfect_score_spash",
+                preserveAspect=true,
+                rectAlignment="MiddleCenter",
+                onClick="ui_clickPerfectScoreSpash"
+            }
+        })
+    end
+    
     local all_colors = Player.getAvailableColors()
     local turn_token_location = getTurnTokenLocation()
 
@@ -737,6 +759,10 @@ end
 function getHanabiIconUrl(name)
     name = "" .. name
     return ASSET_URL .. "icon_" .. name .. "_" .. ASSET_VERSION .. ".png"
+end
+
+function getHanabiPerfectScoreSplash()
+    return ASSET_URL .. "transparent-fireworks-art.png"
 end
 
 function getTableImage(has_rainbow, has_rainbow_firework)
