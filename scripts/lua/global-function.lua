@@ -85,9 +85,12 @@ end
 
 function getCardsInHandZone(color)
     local cards = {}
-    for _,thing in ipairs(getHandZone(color).getObjects()) do
-        if isHanabiCard(thing) then
-            table.insert(cards, thing)
+    local zone = getHandZone(color)
+    if zone ~= nil then
+        for _,thing in ipairs(zone.getObjects()) do
+            if isHanabiCard(thing) then
+                table.insert(cards, thing)
+            end
         end
     end
     return cards
@@ -199,12 +202,9 @@ function getCurrentScore()
 end
 
 function giveHintNumber(player_color, number)
+
     local cards = getCardsInHandZone(player_color)
     for _,card in pairs(cards) do
-        -- front_number
-        -- front_color_mask
-        -- back_number
-        -- back_color_mask
         local info = JSON.decode(card.memo)
         if  info.back_number ~= number and
             info.front_number == number
@@ -214,6 +214,7 @@ function giveHintNumber(player_color, number)
             swapCardBack(card, number, info.back_color_mask)(
                 function(new_card)
                     new_card.setHiddenFrom({player_color})
+                    new_card.UI.setXmlTable(ui_cardUI(new_card, player_color))
                 end
             )
         end
@@ -246,14 +247,7 @@ function giveHintColors(player_color, color_mask)
                 function(new_card)
                     logs(">>>>> giveHintColors new_card:", new_card)
                     new_card.setHiddenFrom({player_color})
-                    new_card.UI.setXmlTable({{
-                        tag="Panel",
-                        attributes={
-                            width=300,
-                            height=300
-                        },
-                        children=ui_alignmentHelpers()
-                    }})
+                    new_card.UI.setXmlTable(ui_cardUI(new_card, player_color))
                 end
             )
         end

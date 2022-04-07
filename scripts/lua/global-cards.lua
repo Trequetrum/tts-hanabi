@@ -188,21 +188,14 @@ function broadcastPlayDiscardText(played, card_info)
         player_name = ui_playerNameBBCodeColored(turn_location)
     end
 
-    local card_color = ui_textBBCodeRainbow()
-    local card_number = NUMBER_STRINGS[tonumber(card_info.front_number)]
+    local card_text = ui_textBBCodeColored(
+        COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)] ..
+        " " ..
+        NUMBER_STRINGS[card_info.front_number],
+        COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)]
+    )
 
-    if card_info.front_color_mask ~= COLOR_MASKS.a then
-        card_color = ui_textBBCodeColored(
-            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)],
-            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)]
-        )
-        card_number = ui_textBBCodeColored(
-            card_number,
-            COLOR_STRINGS[colorCharFromMask(card_info.front_color_mask)]
-        )
-    end
-
-    broadcastToAll(player_name .. played_txt .. " a " .. card_color .. " " .. card_number)
+    broadcastToAll(player_name .. played_txt .. " a " .. card_text)
 
 end
 
@@ -478,6 +471,7 @@ function hideCardsInHands()
         local cards = getCardsInHandZone(player_color)
         for _,card in ipairs(cards) do
             card.setHiddenFrom({player_color, "Grey"})
+            card.UI.setXmlTable(ui_cardUI(card, player_color))
         end
     end
 end

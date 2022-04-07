@@ -7,34 +7,29 @@
     <Panel 
         height="1700"
         width="2300"
+        position="0 0 -100"
     />
 </Defaults>
 
-<Panel
-    id="play_zone_board"
-    position="0 0 -100"
-    visibility="Yellow|Red|Grey|Black"
->
+<Panel visibility="Red|Yellow|Grey|Black">
     <Text rotation="0 0 0">
         <b>DISCARD</b>
     </Text>
 </Panel>
 
-<Panel
-    id="play_zone_board"
-    position="0 0 -100"
-    visibility="Green|Blue"
->
+<Panel visibility="Green">
+    <Text rotation="0 0 270">
+        <b>DISCARD</b>
+    </Text>
+</Panel>
+
+<Panel visibility="Teal|Blue">
     <Text rotation="0 0 180">
         <b>DISCARD</b>
     </Text>
 </Panel>
 
-<Panel
-    id="play_zone_board"
-    position="0 0 -100"
-    visibility="Purple"
->
+<Panel visibility="Purple">
     <Text rotation="0 0 90">
         <b>DISCARD</b>
     </Text>

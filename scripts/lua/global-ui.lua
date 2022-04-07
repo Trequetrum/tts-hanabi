@@ -12,7 +12,6 @@ function ui_defaults()
     },{
         tag="Panel",
         attributes={
-            id="parent_panel",
             height="50%",
             width="95%"
         },
@@ -64,17 +63,28 @@ function ui_playerNameColored(player_color)
     )
 end
 
-function ui_textBBCodeRainbow()
-    return ui_textBBCodeColored('r', "Red") ..
-    ui_textBBCodeColored('a', "Orange") ..
-    ui_textBBCodeColored('i', "Yellow") ..
-    ui_textBBCodeColored('n', "Green") ..
-    ui_textBBCodeColored('b', "Teal") ..
-    ui_textBBCodeColored('o', "Blue") ..
-    ui_textBBCodeColored('w', "Purple")
+function ui_textBBCodeRainbow(text)
+    local rainbow = {"Red", "Orange", "Yellow", "Green", "Teal", "Blue", "Purple"}
+    local r_index = 1
+    local retr = {}
+    for i = 1, #text do
+        local c = string.sub(text, i, i)
+        if c ~= " " and c ~= "\n" then
+            table.insert(retr, ui_textBBCodeColored(c, rainbow[r_index]))
+            r_index = r_index + 1
+            if r_index > #rainbow then r_index = 1 end
+        else
+            table.insert(retr, c)
+        end
+    end
+    
+    return table.concat(retr)
 end
 
 function ui_textBBCodeColored(text, player_color)
+    if player_color == "rainbow" then
+        return ui_textBBCodeRainbow(text)
+    end
     return string.format(
         '[%s]%s[-]',
         Color[player_color]:toHex(),
@@ -90,7 +100,6 @@ function ui_greeting(color)
     return {
         tag="Panel",
         attributes={
-            id=color .. "_greeting_UI",
             visibility=color,
             rectAlignment="UpperRight",
             offsetXY="0 0",
@@ -129,7 +138,6 @@ function ui_pleaseWait(colors_string, color_turn)
     return {
         tag="Panel",
         attributes={
-            id=colors_string .. "_UI",
             visibility=colors_string,
             rectAlignment="UpperRight",
             offsetXY="0 0",
@@ -267,7 +275,6 @@ function ui_gameRuleDialog()
         tag="Button",
         value="Deal and begin a game of Hanabi :)",
         attributes={
-            id="ruleSet1",
             onClick="startGame",
             offsetXY="0 " .. y_offset,
             rectAlignment="UpperRight",
@@ -581,7 +588,6 @@ function ui_askAfterRainbowPlayLocation(info)
         table.insert(panel.children, {
             tag="Panel",
             attributes={
-                id="select_card_".. color_mask .. ":" .. info.card_num,
                 onClick="ui_onSelectCardPlayLocation(" .. info.card_num .. " " .. color_mask .. ")",
                 offsetXY=x_offset .. " 0",
                 rectAlignment="UpperLeft",
@@ -696,13 +702,21 @@ function ui_LoadUI()
 
     if Temp_State.perfect_score_spash then
         table.insert(parent_table, {
-            tag="Image",
+            tag="Panel",
             attributes={
-                image="perfect_score_spash",
-                preserveAspect=true,
-                rectAlignment="MiddleCenter",
-                onClick="ui_clickPerfectScoreSpash"
-            }
+                height="100%",
+                width="40%",
+                rectAlignment="MiddleCenter"
+            },
+            children={{
+                tag="Image",
+                attributes={
+                    image="perfect_score_spash",
+                    preserveAspect=true,
+                    rectAlignment="MiddleCenter",
+                    onClick="ui_clickPerfectScoreSpash"
+                }
+            }}
         })
     end
     

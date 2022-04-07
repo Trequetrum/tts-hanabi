@@ -113,6 +113,7 @@ function onObjectEnterZone(tts_zone, tts_object)
     -- other players
     if tts_zone.type == "Hand" and isHanabiCard(tts_object) then
         tts_object.setHiddenFrom({tts_zone.getValue(), "Grey"})
+        tts_object.UI.setXmlTable(ui_cardUI(tts_object, tts_zone.getValue()))
         flipFaceUp(tts_object)()
     end
 
@@ -137,13 +138,14 @@ function onObjectEnterZone(tts_zone, tts_object)
         })()
     end
 
-    -- Hanabi cards that are layed on the table once played or 
+    -- Hanabi cards that are layed on the table once played or
     -- discarded are revealed to all players
     if  (tts_zone.guid == TTS_GUID.layout_playzone or
         tts_zone.guid == TTS_GUID.layout_discardzone) and
         isHanabiCard(tts_object)
     then
         tts_object.setHiddenFrom({})
+        tts_object.UI.setXml("")
     end
 
     if  tts_zone.guid == TTS_GUID.play_mat or
@@ -153,19 +155,19 @@ function onObjectEnterZone(tts_zone, tts_object)
             continueIf(isHanabiCard),
             continueIf(function(card)
                 local continue = Temp_State.active_cards[card.getGUID()] ~= true
-                Temp_State.active_cards[card.getGUID()] = true
+                Temp_State.active_cards[card.getGUID()] = continue
                 return continue
             end),
             waitUntilResting,
-            continueIf(notDestoyed),
             continueIf(function(card)
-                local continue = isObjectInZone(tts_zone)(card)
-                if not continue then
-                    Temp_State.active_cards[card.getGUID()] = false
-                end
+                local continue = not card.isDestroyed() and isObjectInZone(tts_zone)(card)
+                Temp_State.active_cards[card.getGUID()] = continue
                 return continue
             end),
-            tapFunction(function(card) card.setHiddenFrom({}) end),
+            tapFunction(function(card)
+                card.setHiddenFrom({})
+                card.UI.setXml("")
+            end),
             flipFaceUp,
             continueIf(notDestoyed),
             smoothRelativeMove({0, 5, 0}),
@@ -184,7 +186,7 @@ function onObjectEnterZone(tts_zone, tts_object)
             end),
             tapFunction(advanceTurnToken)
         })()
-   
+
         kleisliPipeOn(tts_object, {
             continueIf(isHanabiCardContainer),
             continueIf(function(deck)
@@ -285,10 +287,12 @@ end
 --[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
     log("Hello World!")
-    ui_LoadUI()
+    ensureLegalPlayerColors()
     hideCardsInHands()
     settupGameKeys()
-    ensureLegalPlayerColors()
+    -- Be sure to load the UI last, it needs any prep to be done already
+    ui_LoadUI()
+    
 
     -- Wait.time(
     --     function()
@@ -300,47 +304,5 @@ function onLoad()
 end
 
 function onPlayerConnect()
-    Wait.frames(function()
-        ensureLegalPlayerColors()
-    end, 60)
-end
-
-function test_series()
-    local tts_zone = getObjectFromGUID(TTS_GUID.token_mat)
-    local tts_object = getHanabiDeck()
-
-    kleisliPipeOn(tts_object, {
-        continueIf(function(oby) return oby.getQuantity() > 0 end),
-        waitUntilResting,
-        continueIf(isObjectInZone(tts_zone)),
-        function(deck)
-            local sequence = {}
-
-            for _,maybe_card in pairs(deck.getObjects()) do
-                if isHanabiCard(maybe_card) then
-                    table.insert(
-                        sequence,
-                        kleisliPipeOn(deck, {
-                            -- This is a short leak, I don't expect this code
-                            -- to run very often or for very long, so who cares?
-                            continueIf(isObjectInZone(tts_zone)),
-                            spawnFromContainer(maybe_card.guid),
-                            smoothRelativeMove({0,10,0}),
-                            tapFunction(function(card)
-                                if tts_zone.getGUID() == TTS_GUID.discard_mat then
-                                    discardCard(card)()
-                                elseif tts_zone.getGUID() == TTS_GUID.play_mat then
-                                    playCard(card)()
-                                else
-                                    smoothMove({0,10,0})(card)()
-                                end
-                            end)
-                        })
-                    )
-                end
-            end
-
-            return seriesCallback(sequence)
-        end
-    })()
+    ensureLegalPlayerColors()
 end

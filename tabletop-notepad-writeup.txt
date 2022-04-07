@@ -33,8 +33,7 @@ You can also check the steam workshop page for this mod for more details or to a
 
 One of the main problems with playing Hanabi on Tabletop Simulator is that it’s not easy to point to a card in a player’s hand in a way that’s easy to see from all the different player’s points of view. This mod comes with a user interface that allows players to customise a set of rules as well as give hints that will automatically appear on the backs of players’ cards.
 
-[b]A useful tip:[/b] You can hold [00FF00]|alt+shift|[-] when hovering over a card to see what hints another player has been given. More often, it makes sense to highlight a player’s hand entirely and press [00FF00]|f|[-]
-
+[b]A useful tip:[/b] Other players get a minimal reminder of what a player has been told. This reminder will show at most one color (per card). To see more, players can hold [00FF00]|alt+shift|[-] when hovering over a card to see what hints another player has been given. Alternatively, players can highlight another player’s hand entirely and press [00FF00]|f|[-]
 
 [800080][b] Using the UI [/b][-]
 

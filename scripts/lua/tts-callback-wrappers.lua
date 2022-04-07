@@ -12,8 +12,11 @@ function flipObject(tts_object)
               
             Wait.condition(
                 function() callback(tts_object, true) end, 
-                function() return tts_object.is_face_down ~= face_down end, 
-                5, 
+                function() 
+                    return not tts_object.isDestroyed() and
+                    tts_object.is_face_down ~= face_down
+                end,
+                5,
                 function() callback(tts_object, false) end
             )
         end
@@ -56,7 +59,10 @@ function smoothRotation(rotation)
             if callback ~= nil then
                 Wait.condition(
                     function() callback(tts_object, true) end,
-                    function() return not tts_object.isSmoothMoving() end,
+                    function() 
+                        return not tts_object.isDestroyed() and
+                        not tts_object.isSmoothMoving()
+                    end,
                     5,
                     function() callback(tts_object, false) end
                 )
@@ -73,7 +79,10 @@ function smoothRelativeRotation(rotation)
             if callback ~= nil then
                 Wait.condition(
                     function() callback(tts_object, true) end,
-                    function() return not tts_object.isSmoothMoving() end,
+                    function() 
+                        return not tts_object.isDestroyed() and
+                        not tts_object.isSmoothMoving()
+                    end,
                     5,
                     function() callback(tts_object, false) end
                 )
@@ -178,7 +187,10 @@ function smoothMove(world_position)
             if callback ~= nil then
                 Wait.condition(
                     function() callback(tts_object, true) end,
-                    function() return not tts_object.isSmoothMoving() end,
+                    function() 
+                        return not tts_object.isDestroyed() and
+                        not tts_object.isSmoothMoving()
+                    end,
                     5,
                     function() callback(tts_object, false) end
                 )
@@ -220,7 +232,10 @@ function waitUntilResting(tts_object)
     return function(callback)
         Wait.condition(
             function() callback(tts_object, true) end,
-            function() return tts_object.resting end,
+            function() 
+                return not tts_object.isDestroyed() and
+                tts_object.resting
+            end,
             5,
             function() callback(tts_object, false) end
         )
@@ -248,7 +263,10 @@ function scale(scale)
             tts_object.scale(scale_vector)
             Wait.condition(
                 function() callback(tts_object, scale_vector, true) end,
-                function() return tts_object.getScale() == scale_vector end,
+                function() 
+                    return not tts_object.isDestroyed() and
+                        tts_object.getScale() == scale_vector
+                end,
                 5,
                 function() callback(tts_object, scale_vector, false) end
             )
