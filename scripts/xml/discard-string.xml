@@ -3,6 +3,7 @@
         color="#ffffff"
         fontSize="200" 
         alignment="MiddleCenter"
+        outline="#000000"
     />
     <Panel 
         height="1700"

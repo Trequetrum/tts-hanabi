@@ -151,6 +151,23 @@ function getFuseTokens()
     return tokens
 end
 
+function availableFuseTokens()
+    local fuse_tokens = getFuseTokens()
+    local avail = {}
+    for _,fuse in ipairs(fuse_tokens) do
+        fuse_r = fuse.getRotation()
+        if  fuse.resting and 
+            tokenMatContains(fuse) and
+            fuse_r.x < 20 and
+            fuse_r.y > 160 and
+            fuse_r.z < 20
+        then
+            table.insert(avail, fuse)
+        end
+    end
+    return avail
+end
+
 function fuseTokenLayoutPos(i)
     local token_mat_pos = getObjectFromGUID(TTS_GUID.token_mat).getPosition()
 
@@ -173,18 +190,9 @@ end
 function useFuseToken()
     return kleisliPipeOnLazy(
         function()
-            local fuse_tokens = getFuseTokens()
-            for _,fuse in ipairs(fuse_tokens) do
-                fuse_r = fuse.getRotation()
-                if  fuse.resting and 
-                    tokenMatContains(fuse) and
-                    fuse_r.x < 20 and
-                    fuse_r.y > 160 and
-                    fuse_r.z < 20
-                then
-                    return fuse
-                end
-            end
+            local fuse_tokens = availableFuseTokens()
+            if #fuse_tokens > 0 then return fuse_tokens[1]
+            else return nil end
         end, {
             continueIf(function(fuse) return fuse ~= nil end),
             tapFunction(function(fuse)
@@ -217,7 +225,8 @@ function useFuseToken()
                     tapCallback(waitFrames(45)),
                     smoothRotation({x=90,y=90,z=0})
                 })
-            end
+            end,
+            tapFunction(ui_loadScoreUI)
         }
     )
 end

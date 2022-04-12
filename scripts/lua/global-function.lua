@@ -148,6 +148,7 @@ function turnDeal()
                 local new_hand_size = #getCardsInHandZone(u_player_color)
                 local min_diff = math.min(dealAmount-hand_size, dealAmount-new_hand_size)
 
+                logs(">>>>> turnDeal(...):", u_deck, hand_size, u_player_color, dealAmount, new_hand_size, min_diff)
                 if new_hand_size > 0 and min_diff > 0 then
                     return dealToPlayer(u_player_color, 1, u_deck)
                 else
@@ -245,7 +246,6 @@ function giveHintColors(player_color, color_mask)
             card.memo = JSON.encode(info)
             swapCardBack(card, info.back_number, updated_mask)(
                 function(new_card)
-                    logs(">>>>> giveHintColors new_card:", new_card)
                     new_card.setHiddenFrom({player_color})
                     new_card.UI.setXmlTable(ui_cardUI(new_card, player_color))
                 end
@@ -291,6 +291,7 @@ function startDeal()
             resetHintTokens()
             resetFuseTokens()
             resetCards()
+            Wait.frames(ui_loadScoreUI, 30)
             return getCurrentGameRules().include_rainbow
         end,{
             spawnHanabiDeck,

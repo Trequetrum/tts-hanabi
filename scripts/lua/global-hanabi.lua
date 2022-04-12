@@ -2,8 +2,10 @@
 ---------------- [[ Global Hanabi Script ]] -------------------------
 ---------------------------------------------------------------------
 
---[[
-    Implement rule when colors arn't wild for rainbow
+--[[ 
+    PLAY- TESTING NOTES!
+    
+    Deal after 3 player?
 ]]
 
 -- Pictures are stored/hosted by this project's github repo
@@ -140,14 +142,18 @@ function onObjectEnterZone(tts_zone, tts_object)
 
     -- Hanabi cards that are layed on the table once played or
     -- discarded are revealed to all players
+    -- and
+    -- when a card is played, calculate and display the score
     if  (tts_zone.guid == TTS_GUID.layout_playzone or
         tts_zone.guid == TTS_GUID.layout_discardzone) and
         isHanabiCard(tts_object)
     then
         tts_object.setHiddenFrom({})
         tts_object.UI.setXml("")
+        ui_loadScoreUI()
     end
 
+    -- Play and discard cards once they come to a rest
     if  tts_zone.guid == TTS_GUID.play_mat or
         tts_zone.guid == TTS_GUID.discard_mat
     then
@@ -290,7 +296,9 @@ function onLoad()
     ensureLegalPlayerColors()
     hideCardsInHands()
     settupGameKeys()
-    -- Be sure to load the UI last, it needs any prep to be done already
+    ui_loadScoreUI()
+    -- Be sure to load the global UI last, 
+    -- it needs any prep to be done already
     ui_LoadUI()
     
 

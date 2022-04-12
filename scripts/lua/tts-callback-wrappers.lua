@@ -46,8 +46,9 @@ function flipLockedObject(tts_object)
     return kleisliPipeOn(tts_object, {
         tapFunction(function(t) t.setLock(false) end),
         flipObject,
-        waitUntilResting,
-        tapFunction(function(t) t.setLock(true) end)
+        tapFunction(function(t)
+            waitUntilResting(t)(function(t) t.setLock(true) end)
+        end),
     })
 end
 

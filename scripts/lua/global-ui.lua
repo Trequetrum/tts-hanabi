@@ -108,16 +108,23 @@ function ui_greeting(color)
         },
         children={{
             tag="Text",
-            value="Hello " .. ui_playerNameColored(color) .. ", the game hasn't started yet",
+            value="Hello " .. ui_playerNameColored(color) .. ",",
             attributes={
                 alignment="UpperRight",
+            }
+        },{
+            tag="Text",
+            value="the game hasn't started yet!",
+            attributes={
+                alignment="UpperRight",
+                offsetXY="0 -25"
             }
         },{
             tag="Text",
             value="Check the 'Rules' notebook for more information",
             attributes={
                 alignment="UpperRight",
-                offsetXY="0 -25"
+                offsetXY="0 -50"
             }
         }}
     }
@@ -193,7 +200,7 @@ function ui_gameRuleDialog()
         tag="Panel",
         attributes={
             rectAlignment="UpperRight",
-            offsetXY="0 -100",
+            offsetXY="0 -125",
             width="400",
             height="400",
             visibility=table.concat(Player.getAvailableColors(), "|")
@@ -253,14 +260,14 @@ function ui_gameRuleDialog()
         y_offset = y_offset - 30
         table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_multicolor",
-            "Rainbows cards are every color when giving hints",
+            "Rainbow cards are every color for hints",
             y_offset
         ))
 
         y_offset = y_offset - 30
         table.insert(panel.children, ui_createGameRuleToggle(
             "rainbow_talking",
-            "Rainbow is a color (Use rainbow as a hint)",
+            "Rainbow is a color (Use as a hint)",
             y_offset
         ))
 
@@ -701,11 +708,12 @@ function ui_LoadUI()
     local parent_table = global_layout[2].children
 
     if Temp_State.perfect_score_spash then
-        table.insert(parent_table, {
+        table.insert(global_layout, {
             tag="Panel",
             attributes={
-                height="100%",
-                width="40%",
+                height="80%",
+                width="45%",
+                --color="rgba(1,1,1,0.5)"
                 rectAlignment="MiddleCenter"
             },
             children={{
