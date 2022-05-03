@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------
 -------------- [[ Callback Thunk Utilities ]] -----------------------
 ---------------------------------------------------------------------
--- 
+--
 -- Utility functions that make working with callbacks in an api much
 -- nicer. To use these function you must first turn a callback into
 -- a callback_thunk.
@@ -93,6 +93,8 @@ end
 -- Same as kleisliPipeOn, but lets you calculate some initial value at
 -- the moment the callback_thunk is run
 function kleisliPipeOnLazy(thunk_init, bind_fn_array)
+    -- This can't be written point-free, because we're introducing a lazy
+    -- value. thunk_init is only evaluated as part of the join on the callback.
     return function(callback)
         kleisliCallbackPipe(bind_fn_array)(thunk_init())(callback)
     end

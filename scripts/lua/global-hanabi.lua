@@ -131,9 +131,9 @@ function onObjectEnterZone(tts_zone, tts_object)
             waitUntilResting,
             tapFunction(function()
                 local location = getTurnTokenLocation()
-                if location ~= "token_mat" then
-                    broadcastToAll("Starting " .. ui_playerNameBBCodeColored(location) .. "'s turn")
-                end
+                -- if location ~= "token_mat" then
+                --     broadcastToAll("Starting " .. ui_playerNameBBCodeColored(location) .. "'s turn")
+                -- end
                 ui_LoadUI()
                 Temp_State.tracking_turn_token = false
             end)

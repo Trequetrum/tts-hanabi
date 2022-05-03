@@ -395,7 +395,7 @@ function ui_hintOptions(color)
     --     end
     -- end
 
-    for i,player_color in ipairs(players_by_color) do
+    for _,player_color in ipairs(players_by_color) do
         
         local is_on = false
         if talk_to == player_color then
@@ -467,8 +467,13 @@ function ui_hintOptions(color)
         local button_height = 80
         x_offset = 0
         for c,mask in pairs(COLOR_MASKS) do
-            if  bit32.band(mask,hint_color_mask) == mask and
-                (c ~= "a" or (has_rainbow and game_rules.rainbow_talking))
+            if  mask == COLOR_MASKS.a and has_rainbow or
+                (   bit32.band(mask,hint_color_mask) == mask and
+                    (mask ~= COLOR_MASKS.a or (   
+                        has_rainbow and 
+                        game_rules.rainbow_talking
+                    ))
+                )
             then
                 table.insert(panel.children, {
                     tag="Panel",

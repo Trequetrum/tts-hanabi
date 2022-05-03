@@ -126,6 +126,8 @@ function turnDeal()
 
     Temp_State.dealing = true
 
+    Wait.frames(function() Temp_State.dealing = false end, 240)
+
     local deck = getHanabiDeck(false)
     if deck == nil then
         displayLog("Info: No more cards, no end of turn deal")
@@ -156,7 +158,7 @@ function turnDeal()
                 end
             end
         }))
-     
+
     end
 
     table.insert(callback_thunks, liftFunctionTocallback(function()
@@ -373,7 +375,7 @@ function getActivePlayerColors()
 
     local active_colors = mapArray(
         Player.getPlayers(),
-        function(p) return p.color end
+        pluck("color")
     )
 
     for _,color in pairs(colors) do
