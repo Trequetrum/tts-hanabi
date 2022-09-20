@@ -91,7 +91,6 @@ function isHanabiCardContainer(tts_object)
     return false
 end
 
-
 function discardCard(card)
     return kleisliPipeOnLazy(
         function()
@@ -295,7 +294,7 @@ function askAfterRainbowPlayLocation(card)
             (   color_mask ~= COLOR_MASKS.a or
                 getCurrentGameRules().rainbow_firework
             ) and
-            -- We can only play a number if there's a sport for it and
+            -- We can only play a number if there's a spot for it and
             played_cards[color_mask].count + 1 == card_num and
             -- Either the firework has no rainbow yet or it's the
             -- rainbow firework (So it can have as many as it likes)
@@ -322,6 +321,8 @@ function askAfterRainbowPlayLocation(card)
         pos.y = 3
         return liftValuesToCallback(pos, card)
     else
+        -- Extract this into callback-wrappers if we ever need to re-use it.
+        -- For now, I suppose it's fine here :)
         return function(callback)
             Temp_State.askAfterRainbowPlayLocation = {
                 callback=function(card_num, card_color_mask)
@@ -441,7 +442,17 @@ function getHanabiDeck(verbose)
     end
 
     deck = getDeckInList(getObjects())
-    Temp_State.deck = deck
+    if deck ~= nil then
+        Temp_State.deck = deck
+        return deck 
+    end
+
+    for _,thingy in ipairs(getTokenMatObjects()) do
+        if isHanabiCard(thingy) then
+            Temp_State.deck = thingy
+            return thingy
+        end
+    end
 
     if deck == nil and verbose then
         displayLog("Alert: Failure to find hanabi deck")
