@@ -247,6 +247,18 @@ function onObjectEnterZone(tts_zone, tts_object)
 
 end
 
+function onObjectLeaveZone(tts_zone, tts_object)
+
+    -- Cards cleaving the playzone trigger a recount of
+    -- the score
+    if  (tts_zone.guid == TTS_GUID.layout_playzone or
+        tts_zone.guid == TTS_GUID.layout_discardzone) and
+        isHanabiCard(tts_object)
+    then
+        ui_loadScoreUI()
+    end
+end
+
 function onObjectSpawn(tts_object)
     if isHanabiCard(tts_object) then
         tts_object.setHiddenFrom(table.insert(Player.getAvailableColors(), "Grey"))

@@ -1,5 +1,5 @@
 function ui_loadScoreUI()
-    local score_ob = getObjectByName("score_string")
+    local score_ob = getObjectByName("score-string")
     local score = getCurrentScore()
 
     if score == 0 then

@@ -144,6 +144,11 @@ function turnDeal()
             tapCallback(waitFrames(5)),
             function(info)
                 local u_deck = getHanabiDeck(false)
+
+                if u_deck == nil then
+                    return liftValuesToCallback({false})
+                end
+
                 local hand_size = info.hand_size
                 local u_player_color = info.player_color
                 local dealAmount = getCurrentDealAmount()

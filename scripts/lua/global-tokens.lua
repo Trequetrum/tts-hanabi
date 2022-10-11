@@ -225,8 +225,7 @@ function useFuseToken()
                     tapCallback(waitFrames(45)),
                     smoothRotation({x=90,y=90,z=0})
                 })
-            end,
-            tapFunction(ui_loadScoreUI)
+            end
         }
     )
 end

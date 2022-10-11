@@ -449,7 +449,6 @@ function getHanabiDeck(verbose)
 
     for _,thingy in ipairs(getTokenMatObjects()) do
         if isHanabiCard(thingy) then
-            Temp_State.deck = thingy
             return thingy
         end
     end
